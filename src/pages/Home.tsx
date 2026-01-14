@@ -1,117 +1,113 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import BottomNav from "@/components/BottomNav";
+import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import { products, categories } from "@/data/products";
 
 const Home = () => {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState("Headphones");
-  const trendingProducts = products.slice(0, 4);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const featuredProducts = products.filter(p => p.isFeatured);
+  const newProducts = products.filter(p => p.isNew);
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden max-w-md mx-auto border-x border-border shadow-2xl bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md px-4 py-3">
-        <div className="flex items-center gap-3">
-          {/* Search Bar */}
-          <div className="flex-1 flex items-center h-12 bg-card rounded-lg px-4 shadow-sm border border-border group focus-within:ring-2 focus-within:ring-primary/50 transition-all">
-            <span className="material-symbols-outlined text-muted-foreground">search</span>
-            <input
-              type="text"
-              placeholder="Search gadgets..."
-              className="flex-1 bg-transparent border-none text-base text-foreground placeholder-muted-foreground focus:ring-0 focus:outline-none px-3"
-            />
-            <button className="text-primary hover:text-primary/80 transition-colors flex items-center justify-center p-1 rounded-full hover:bg-primary/10">
-              <span className="material-symbols-outlined">mic</span>
-            </button>
+    <Layout>
+      <div className="content-container py-6 lg:py-10">
+        {/* Hero Section */}
+        <motion.section 
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card to-surface mb-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="grid lg:grid-cols-2 gap-8 p-8 lg:p-12">
+            <div className="flex flex-col justify-center">
+              <span className="inline-block w-fit px-4 py-1.5 mb-4 bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest rounded-full">
+                Premium Collection
+              </span>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4">
+                Experience Sound <span className="text-primary">Perfection</span>
+              </h1>
+              <p className="text-muted-foreground text-lg mb-8 max-w-md">
+                Discover our curated collection of premium audio devices and accessories.
+              </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => navigate("/products")}
+                  className="btn-premium px-8 py-4"
+                >
+                  Shop Now
+                </button>
+                <button 
+                  onClick={() => navigate("/products")}
+                  className="px-8 py-4 border border-border rounded-lg font-medium hover:bg-accent transition-colors"
+                >
+                  Explore
+                </button>
+              </div>
+            </div>
+            <div className="relative hidden lg:block">
+              <div className="absolute inset-0 bg-gradient-to-r from-card to-transparent z-10" />
+              <img 
+                src={products[0].image}
+                alt="Featured Product"
+                className="w-full h-80 object-cover rounded-2xl"
+              />
+            </div>
           </div>
-          
-          {/* Notification */}
-          <button className="flex items-center justify-center w-12 h-12 rounded-lg bg-card text-foreground shadow-sm border border-border relative">
-            <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-3 right-3 w-2 h-2 bg-destructive rounded-full" />
-          </button>
-        </div>
-      </header>
+        </motion.section>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-24 space-y-6">
-        {/* Category Scroll */}
-        <section className="w-full">
-          <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-1 pt-2">
+        {/* Categories */}
+        <section className="mb-10">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {categories.map((category) => (
               <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`flex-shrink-0 flex items-center justify-center px-5 h-9 rounded-full transition-all active:scale-95 ${
-                  activeCategory === category
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "bg-card border border-border text-muted-foreground hover:bg-accent"
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${
+                  activeCategory === category.id
+                    ? "bg-primary text-primary-foreground shadow-gold-md"
+                    : "bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary"
                 }`}
               >
-                <span className="text-sm font-medium">{category}</span>
+                <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
+                <span className="text-sm font-medium">{category.name}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* Hero Banner */}
-        <section className="px-4">
-          <motion.div 
-            className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl overflow-hidden shadow-xl group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.3 }}
-            onClick={() => navigate("/products")}
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBc9dH0rDzJkBIo_shBBEViujLoaPUVNtssGF7b_id1_3yGoip-9UMNEZdMXKxALiDxlg2BaKry29kdGs_g3MbJXLhpACvSMp6mQ3mdrDXZQqCIMSzy_-v2BpWtDdBxU4Jksdi6k2MN6jHUvXz1VDGuwQE49QCALTlajr1d9gUVsHqvM5vhZ8AJWzYA1g6ViCqPjLdi43UItnt9yxIqpHRSVt1L56klvZwH2oOHaF9bXNooepw6CC2M5ZFHCQGCrNgich4t9hJoEA')" }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-            
-            <div className="absolute bottom-0 left-0 w-full p-5 sm:p-6 flex flex-col items-start gap-2">
-              <span className="inline-block px-2.5 py-1 rounded bg-white/20 backdrop-blur-sm text-xs font-semibold text-white uppercase tracking-wider border border-white/10">
-                New Arrival
-              </span>
-              <h2 className="text-3xl font-bold text-white leading-tight mt-1">The Future of Sound</h2>
-              <p className="text-gray-300 text-sm sm:text-base font-normal max-w-[80%] mb-2">
-                Experience the next generation of active noise-canceling technology.
-              </p>
-              <button className="mt-2 h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-all shadow-primary-glow flex items-center gap-2">
-                <span>Shop Now</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </button>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Trending Grid */}
-        <section className="px-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-foreground tracking-tight">Trending Gadgets</h2>
-            <button 
-              onClick={() => navigate("/products")}
-              className="text-primary text-sm font-medium hover:underline"
-            >
-              See All
+        {/* Featured Products */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-display text-2xl font-bold text-foreground">Featured</h2>
+            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
+              View All
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {trendingProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                onAddToCart={() => console.log("Added to cart:", product.name)}
-              />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
             ))}
           </div>
         </section>
-      </main>
 
-      <BottomNav />
-    </div>
+        {/* New Arrivals */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-display text-2xl font-bold text-foreground">New Arrivals</h2>
+            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
+              View All
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+            {newProducts.map((product) => (
+              <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
+            ))}
+          </div>
+        </section>
+      </div>
+    </Layout>
   );
 };
 

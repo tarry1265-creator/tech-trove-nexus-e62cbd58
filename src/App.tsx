@@ -7,6 +7,12 @@ import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
+import Search from "./pages/Search";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import Wishlist from "./pages/Wishlist";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,8 +28,12 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/cart" element={<Home />} />
-          <Route path="/profile" element={<Home />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

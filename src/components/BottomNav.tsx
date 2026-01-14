@@ -1,18 +1,20 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 interface NavItem {
   icon: string;
   filledIcon?: string;
   label: string;
   path: string;
-  badge?: boolean;
+  badge?: number;
 }
 
 const navItems: NavItem[] = [
   { icon: "home", filledIcon: "home", label: "Home", path: "/home" },
-  { icon: "grid_view", label: "Catalog", path: "/products" },
-  { icon: "shopping_bag", label: "Cart", path: "/cart", badge: true },
-  { icon: "person", label: "Profile", path: "/profile" },
+  { icon: "search", label: "Search", path: "/search" },
+  { icon: "shopping_bag", label: "Cart", path: "/cart", badge: 3 },
+  { icon: "favorite_border", filledIcon: "favorite", label: "Wishlist", path: "/wishlist" },
+  { icon: "person_outline", filledIcon: "person", label: "Profile", path: "/profile" },
 ];
 
 const BottomNav = () => {
@@ -20,8 +22,8 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 z-30 w-full max-w-md left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-lg border-t border-border pb-safe">
-      <div className="flex justify-around items-center h-16">
+    <nav className="lg:hidden fixed bottom-0 z-50 w-full bg-card/95 backdrop-blur-xl border-t border-border/50 pb-safe">
+      <div className="flex justify-around items-center h-16 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path === "/products" && location.pathname.startsWith("/products"));
@@ -30,19 +32,30 @@ const BottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              className={`relative flex flex-col items-center justify-center w-full h-full gap-0.5 transition-all ${
+                isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
               <div className="relative">
-                <span className={`material-symbols-outlined text-[26px] ${isActive ? "filled" : ""}`}>
+                {isActive && (
+                  <motion.div
+                    layoutId="bottomNavActive"
+                    className="absolute -inset-2 bg-primary/10 rounded-xl"
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <span className={`relative material-symbols-outlined text-[24px] ${isActive ? "filled" : ""}`}>
                   {isActive && item.filledIcon ? item.filledIcon : item.icon}
                 </span>
-                {item.badge && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
+                {item.badge && item.badge > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {item.badge}
+                  </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className={`text-[10px] font-medium ${isActive ? "text-primary" : ""}`}>
+                {item.label}
+              </span>
             </button>
           );
         })}
