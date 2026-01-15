@@ -3,13 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
-import { products, categories } from "@/data/products";
+import { useProducts, useFeaturedProducts, useNewArrivals, useCategories } from "@/hooks/useProducts";
 
 const Home = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("all");
-  const featuredProducts = products.filter(p => p.isFeatured);
-  const newProducts = products.filter(p => p.isNew);
+  
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: featuredProducts = [], isLoading: featuredLoading } = useFeaturedProducts();
+  const { data: newProducts = [], isLoading: newLoading } = useNewArrivals();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const allCategories = [
+    { id: "all", name: "All", slug: "all", icon: "apps" },
+    ...categories.map(cat => ({ ...cat, icon: cat.icon || "category" }))
+  ];
 
   return (
     <Layout>
@@ -48,11 +56,13 @@ const Home = () => {
             </div>
             <div className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-r from-card to-transparent z-10" />
-              <img 
-                src={products[0].image}
-                alt="Featured Product"
-                className="w-full h-80 object-cover rounded-2xl"
-              />
+              {products[0] && (
+                <img 
+                  src={products[0].image_url}
+                  alt="Featured Product"
+                  className="w-full h-80 object-cover rounded-2xl"
+                />
+              )}
             </div>
           </div>
         </motion.section>
@@ -60,12 +70,12 @@ const Home = () => {
         {/* Categories */}
         <section className="mb-10">
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setActiveCategory(category.id)}
+                onClick={() => setActiveCategory(category.slug)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${
-                  activeCategory === category.id
+                  activeCategory === category.slug
                     ? "bg-primary text-primary-foreground shadow-gold-md"
                     : "bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary"
                 }`}
@@ -85,11 +95,23 @@ const Home = () => {
               View All
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
-            ))}
-          </div>
+          {featuredLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-surface animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  {...product} 
+                  onAddToCart={() => {}} 
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* New Arrivals */}
@@ -100,11 +122,23 @@ const Home = () => {
               View All
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {newProducts.map((product) => (
-              <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
-            ))}
-          </div>
+          {newLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-surface animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {newProducts.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  {...product} 
+                  onAddToCart={() => {}} 
+                />
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </Layout>

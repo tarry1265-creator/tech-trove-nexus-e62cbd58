@@ -1,14 +1,30 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { mockCartItems } from "@/data/products";
+import { mockCartItems, CartItem } from "@/data/products";
+import { formatPrice } from "@/hooks/useProducts";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const items = mockCartItems;
+  const [items] = useState<CartItem[]>(mockCartItems);
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const total = subtotal;
+  const shipping = 2500;
+  const total = subtotal + shipping;
+
+  if (items.length === 0) {
+    return (
+      <Layout>
+        <div className="content-container py-20 text-center">
+          <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">shopping_cart</span>
+          <p className="text-muted-foreground mb-6">Your cart is empty</p>
+          <button onClick={() => navigate("/products")} className="btn-premium px-8 py-3">
+            Continue Shopping
+          </button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showBottomNav={false}>
@@ -30,9 +46,10 @@ const Checkout = () => {
                 <input placeholder="First Name" className="input-premium" />
                 <input placeholder="Last Name" className="input-premium" />
                 <input placeholder="Email" className="input-premium sm:col-span-2" />
+                <input placeholder="Phone Number (+234...)" className="input-premium sm:col-span-2" />
                 <input placeholder="Address" className="input-premium sm:col-span-2" />
                 <input placeholder="City" className="input-premium" />
-                <input placeholder="Zip Code" className="input-premium" />
+                <input placeholder="State" className="input-premium" />
               </div>
             </div>
 
@@ -43,18 +60,18 @@ const Checkout = () => {
                 <label className="flex items-center gap-4 p-4 border border-primary rounded-xl cursor-pointer">
                   <input type="radio" name="payment" defaultChecked className="accent-primary" />
                   <span className="material-symbols-outlined">credit_card</span>
-                  <span>Credit Card</span>
+                  <span>Card Payment</span>
                 </label>
                 <label className="flex items-center gap-4 p-4 border border-border rounded-xl cursor-pointer hover:border-muted-foreground">
                   <input type="radio" name="payment" className="accent-primary" />
                   <span className="material-symbols-outlined">account_balance</span>
                   <span>Bank Transfer</span>
                 </label>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                <input placeholder="Card Number" className="input-premium sm:col-span-2" />
-                <input placeholder="MM/YY" className="input-premium" />
-                <input placeholder="CVV" className="input-premium" />
+                <label className="flex items-center gap-4 p-4 border border-border rounded-xl cursor-pointer hover:border-muted-foreground">
+                  <input type="radio" name="payment" className="accent-primary" />
+                  <span className="material-symbols-outlined">local_shipping</span>
+                  <span>Pay on Delivery</span>
+                </label>
               </div>
             </div>
           </div>
@@ -65,19 +82,29 @@ const Checkout = () => {
             <div className="space-y-4 mb-6">
               {items.map(item => (
                 <div key={item.id} className="flex gap-3">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 rounded-lg object-cover" />
+                  <img src={item.image_url} alt={item.name} className="w-16 h-16 rounded-lg object-cover" />
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.name}</p>
                     <p className="text-muted-foreground text-sm">x{item.quantity}</p>
                   </div>
-                  <span className="font-semibold">${item.price * item.quantity}</span>
+                  <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
                 </div>
               ))}
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Shipping</span>
+                <span>{formatPrice(shipping)}</span>
+              </div>
             </div>
             <div className="border-t border-border pt-4 mb-6">
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
             <button onClick={() => alert("Order placed! (Demo)")} className="w-full btn-premium py-4">

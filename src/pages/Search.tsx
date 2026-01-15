@@ -2,18 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/products";
+import { useSearchProducts } from "@/hooks/useProducts";
 
 const Search = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   
-  const results = query.length > 0 
-    ? products.filter(p => 
-        p.name.toLowerCase().includes(query.toLowerCase()) || 
-        p.brand.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
+  const { data: results = [], isLoading } = useSearchProducts(query);
 
   return (
     <Layout>
@@ -32,15 +27,25 @@ const Search = () => {
         </div>
 
         {/* Results */}
-        {query.length > 0 ? (
+        {query.length >= 2 ? (
           <>
-            <p className="text-muted-foreground mb-6">{results.length} results for "{query}"</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {results.map((product) => (
-                <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
-              ))}
-            </div>
-            {results.length === 0 && (
+            <p className="text-muted-foreground mb-6">
+              {isLoading ? "Searching..." : `${results.length} results for "${query}"`}
+            </p>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="aspect-square rounded-2xl bg-surface animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                {results.map((product) => (
+                  <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
+                ))}
+              </div>
+            )}
+            {!isLoading && results.length === 0 && (
               <div className="text-center py-20">
                 <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">search_off</span>
                 <p className="text-muted-foreground">No products found</p>
