@@ -2,17 +2,43 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
-import { products } from "@/data/products";
+import { useProduct, formatPrice } from "@/hooks/useProducts";
 
 const ProductDetails = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
-  const product = products.find(p => p.id === id);
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
+  const { data: product, isLoading, error } = useProduct(slug);
   const [quantity, setQuantity] = useState(1);
 
-  if (!product) {
-    return <Layout><div className="content-container py-20 text-center">Product not found</div></Layout>;
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="content-container py-6 lg:py-10">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            <div className="aspect-square rounded-3xl bg-surface animate-pulse" />
+            <div className="space-y-4">
+              <div className="h-6 w-24 bg-surface rounded animate-pulse" />
+              <div className="h-10 w-3/4 bg-surface rounded animate-pulse" />
+              <div className="h-20 w-full bg-surface rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <Layout>
+        <div className="content-container py-20 text-center">
+          <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">error</span>
+          <p className="text-muted-foreground mb-6">Product not found</p>
+          <button onClick={() => navigate("/products")} className="btn-premium px-8 py-3">
+            Browse Products
+          </button>
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -30,48 +56,46 @@ const ProductDetails = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
           </motion.div>
 
           {/* Details */}
           <div className="flex flex-col">
-            <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-2">{product.brand}</span>
+            <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-2">
+              {product.brand || "Roothub"}
+            </span>
             <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-4">{product.name}</h1>
             
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-primary filled">star</span>
-                <span className="font-semibold">{product.rating}</span>
-              </div>
-              <span className="text-muted-foreground">({product.reviewCount?.toLocaleString()} reviews)</span>
-            </div>
-
-            <p className="text-muted-foreground mb-8">{product.description}</p>
-
-            {/* Colors */}
-            {product.colors && (
-              <div className="mb-6">
-                <span className="text-sm font-medium text-foreground mb-3 block">Color: {selectedColor}</span>
-                <div className="flex gap-3">
-                  {product.colors.map(color => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 rounded-lg border text-sm transition-all ${
-                        selectedColor === color ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-foreground"
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  ))}
+            {product.rating && (
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-primary filled">star</span>
+                  <span className="font-semibold">{product.rating}</span>
                 </div>
+                <span className="text-muted-foreground">• {product.category?.name}</span>
               </div>
             )}
 
+            <p className="text-muted-foreground mb-8">{product.description}</p>
+
+            {/* Stock Status */}
+            <div className="mb-6">
+              {product.stock_quantity && product.stock_quantity > 0 ? (
+                <span className="inline-flex items-center gap-2 text-green-500">
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  In Stock ({product.stock_quantity} available)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 text-destructive">
+                  <span className="material-symbols-outlined text-[18px]">cancel</span>
+                  Out of Stock
+                </span>
+              )}
+            </div>
+
             {/* Price & Add to Cart */}
             <div className="flex items-center gap-4 mb-8">
-              <span className="text-3xl font-bold">${product.price}</span>
-              {product.originalPrice && <span className="text-xl text-muted-foreground line-through">${product.originalPrice}</span>}
+              <span className="text-3xl font-bold">{formatPrice(product.price)}</span>
             </div>
 
             <div className="flex gap-4">
@@ -86,18 +110,17 @@ const ProductDetails = () => {
               </button>
             </div>
 
-            {/* Features */}
-            {product.features && (
+            {/* Category Info */}
+            {product.category && (
               <div className="mt-10 pt-8 border-t border-border">
-                <h3 className="font-display text-lg font-semibold mb-4">Features</h3>
-                <ul className="grid grid-cols-2 gap-3">
-                  {product.features.map(feature => (
-                    <li key={feature} className="flex items-center gap-2 text-muted-foreground">
-                      <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <h3 className="font-display text-lg font-semibold mb-4">Category</h3>
+                <button 
+                  onClick={() => navigate(`/products?category=${product.category?.slug}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-surface rounded-lg hover:bg-accent transition-colors"
+                >
+                  <span className="material-symbols-outlined text-primary">{product.category.icon || "category"}</span>
+                  <span>{product.category.name}</span>
+                </button>
               </div>
             )}
           </div>

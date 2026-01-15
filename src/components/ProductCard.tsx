@@ -1,17 +1,19 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { formatPrice } from "@/hooks/useProducts";
 
 interface ProductCardProps {
   id: string;
+  slug: string;
   name: string;
-  brand: string;
+  brand: string | null;
   price: number;
   originalPrice?: number;
-  rating: number;
+  rating: number | null;
   reviewCount?: number;
-  image: string;
-  description?: string;
-  isNew?: boolean;
+  image_url: string;
+  description?: string | null;
+  is_new_arrival?: boolean | null;
   onAddToCart?: () => void;
   onFavorite?: () => void;
   isFavorited?: boolean;
@@ -19,14 +21,15 @@ interface ProductCardProps {
 
 const ProductCard = ({ 
   id,
+  slug,
   name, 
   brand, 
   price,
   originalPrice,
   rating, 
   reviewCount,
-  image, 
-  isNew,
+  image_url, 
+  is_new_arrival,
   onAddToCart,
   onFavorite,
   isFavorited = false,
@@ -40,13 +43,13 @@ const ProductCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
-      onClick={() => navigate(`/product/${id}`)}
+      onClick={() => navigate(`/product/${slug}`)}
     >
       {/* Image Container */}
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface mb-3">
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-          {isNew && (
+          {is_new_arrival && (
             <span className="px-2.5 py-1 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider rounded-full">
               New
             </span>
@@ -78,7 +81,7 @@ const ProductCard = ({
         {/* Product Image */}
         <div 
           className="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-110"
-          style={{ backgroundImage: `url('${image}')` }}
+          style={{ backgroundImage: `url('${image_url}')` }}
         />
         
         {/* Quick Add Button */}
@@ -101,28 +104,30 @@ const ProductCard = ({
       {/* Product Info */}
       <div className="flex flex-col gap-1.5">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {brand}
+          {brand || "Roothub"}
         </p>
         <h3 className="font-display text-base font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
           {name}
         </h3>
         
         {/* Rating */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-0.5">
-            <span className="material-symbols-outlined text-[14px] text-primary filled">star</span>
-            <span className="text-xs font-semibold text-foreground">{rating}</span>
+        {rating && (
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              <span className="material-symbols-outlined text-[14px] text-primary filled">star</span>
+              <span className="text-xs font-semibold text-foreground">{rating}</span>
+            </div>
+            {reviewCount && (
+              <span className="text-xs text-muted-foreground">({reviewCount.toLocaleString()})</span>
+            )}
           </div>
-          {reviewCount && (
-            <span className="text-xs text-muted-foreground">({reviewCount.toLocaleString()})</span>
-          )}
-        </div>
+        )}
         
         {/* Price */}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-lg font-bold text-foreground">${price}</span>
+          <span className="text-lg font-bold text-foreground">{formatPrice(price)}</span>
           {originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">${originalPrice}</span>
+            <span className="text-sm text-muted-foreground line-through">{formatPrice(originalPrice)}</span>
           )}
         </div>
       </div>

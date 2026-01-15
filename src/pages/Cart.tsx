@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { mockCartItems, CartItem } from "@/data/products";
+import { CartItem, mockCartItems } from "@/data/products";
+import { formatPrice } from "@/hooks/useProducts";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const Cart = () => {
             <div className="lg:col-span-2 space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-4 p-4 bg-card rounded-2xl border border-border">
-                  <img src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover" />
+                  <img src={item.image_url} alt={item.name} className="w-24 h-24 rounded-xl object-cover" />
                   <div className="flex-1">
                     <div className="flex justify-between">
                       <div>
@@ -58,7 +59,7 @@ const Cart = () => {
                         <span className="px-3">{item.quantity}</span>
                         <button onClick={() => updateQuantity(item.id, 1)} className="px-3 py-1 hover:bg-accent">+</button>
                       </div>
-                      <span className="font-bold">${item.price * item.quantity}</span>
+                      <span className="font-bold">{formatPrice(item.price * item.quantity)}</span>
                     </div>
                   </div>
                 </div>
@@ -71,15 +72,15 @@ const Cart = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `$${shipping}`}</span>
+                  <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
                 </div>
                 <div className="border-t border-border pt-4 flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
               </div>
               <button onClick={() => navigate("/checkout")} className="w-full btn-premium py-4">
