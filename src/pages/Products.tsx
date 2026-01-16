@@ -32,37 +32,40 @@ const Products = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col">
-            <h1 className="font-display text-2xl lg:text-3xl font-bold">
+        <div className="glass-card rounded-3xl p-6 mb-8">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex flex-col">
+              <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
               {brandFilter ? `${brandFilter} Products` : "All Products"}
             </h1>
             {brandFilter && (
               <button
                 onClick={() => navigate("/products")}
-                className="text-sm text-primary hover:underline self-start"
+                className="text-sm text-muted-foreground hover:text-foreground self-start transition-colors mt-1"
               >
                 Clear Brand Filter
               </button>
             )}
+              <div className="mt-5 flex flex-wrap gap-2">
+                {allCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.slug)}
+                    className={`px-4 py-2 rounded-full transition-all whitespace-nowrap text-sm border ${activeCategory === category.slug
+                      ? "bg-white/10 border-white/10 text-foreground"
+                      : "bg-card/30 border-border/60 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Showing</div>
+              <div className="text-2xl font-bold text-foreground">{filteredProducts.length}</div>
+            </div>
           </div>
-          <span className="text-muted-foreground">{filteredProducts.length} products</span>
-        </div>
-
-        {/* Filters */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 mb-6">
-          {allCategories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.slug)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap text-sm ${activeCategory === category.slug
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-surface border border-border text-muted-foreground hover:border-primary"
-                }`}
-            >
-              {category.name}
-            </button>
-          ))}
         </div>
 
         {/* Product Grid */}

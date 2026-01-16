@@ -26,9 +26,9 @@ const DesktopNav = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="hidden lg:block sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <header className="hidden lg:block sticky top-4 z-50">
       <div className="content-container">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 px-5 rounded-2xl bg-card/60 border border-border/50 backdrop-blur-xl shadow-soft">
           {/* Logo */}
           <button
             onClick={() => navigate("/home")}
@@ -37,29 +37,29 @@ const DesktopNav = () => {
             <div className="relative">
               <span className="material-symbols-outlined brain-gradient-text text-3xl">bolt</span>
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight text-foreground group-hover:brain-gradient-text transition-all">
+            <span className="font-display text-2xl font-bold tracking-tight text-foreground group-hover:brain-gradient-text transition-all select-none">
               BRAINHUB
             </span>
           </button>
 
           {/* Nav Links */}
-          <nav className="flex items-center gap-8">
+          <nav className="flex items-center gap-1">
             {navLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={`relative font-sans text-sm font-medium transition-colors ${isActive(link.path)
-                  ? "text-primary"
+                className={`relative px-4 py-2 rounded-full font-sans text-sm font-medium transition-colors ${isActive(link.path)
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
                   }`}
               >
-                {link.label}
                 {isActive(link.path) && (
                   <motion.div
                     layoutId="activeNav"
-                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full"
+                    className="absolute inset-0 rounded-full bg-white/5 border border-border/40"
                   />
                 )}
+                <span className="relative">{link.label}</span>
               </button>
             ))}
 
@@ -70,7 +70,7 @@ const DesktopNav = () => {
               onMouseLeave={() => setShowBrands(false)}
             >
               <button
-                className={`relative font-sans text-sm font-medium transition-colors flex items-center gap-1 ${location.search.includes("brand") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                className={`relative px-4 py-2 rounded-full font-sans text-sm font-medium transition-colors flex items-center gap-1 ${location.search.includes("brand") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
               >
                 Brands
@@ -85,7 +85,7 @@ const DesktopNav = () => {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full left-0 pt-4 w-48"
                   >
-                    <div className="bg-card border border-border rounded-xl shadow-xl overflow-hidden p-2">
+                    <div className="bg-card/70 border border-border/50 rounded-2xl shadow-soft backdrop-blur-xl overflow-hidden p-2">
                       {brands.length > 0 ? (
                         <div className="flex flex-col gap-1 max-h-64 overflow-y-auto no-scrollbar">
                           {brands.map(brand => (
@@ -95,7 +95,7 @@ const DesktopNav = () => {
                                 navigate(`/products?brand=${encodeURIComponent(brand)}`);
                                 setShowBrands(false);
                               }}
-                              className="text-left px-3 py-2 rounded-lg hover:bg-surface text-sm text-foreground/80 hover:text-primary transition-colors"
+                              className="text-left px-3 py-2 rounded-xl hover:bg-surface/70 text-sm text-foreground/80 hover:text-foreground transition-colors"
                             >
                               {brand}
                             </button>
@@ -116,7 +116,7 @@ const DesktopNav = () => {
             {/* Search */}
             <button
               onClick={() => navigate("/search")}
-              className="p-2.5 rounded-full hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">search</span>
             </button>
@@ -124,7 +124,7 @@ const DesktopNav = () => {
             {/* Wishlist */}
             <button
               onClick={() => navigate("/wishlist")}
-              className="p-2.5 rounded-full hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">favorite_border</span>
             </button>
@@ -132,7 +132,7 @@ const DesktopNav = () => {
             {/* Cart */}
             <button
               onClick={() => navigate("/cart")}
-              className="relative p-2.5 rounded-full hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              className="relative p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
               {cartCount > 0 && (
@@ -145,7 +145,7 @@ const DesktopNav = () => {
             {/* Profile */}
             <button
               onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-border hover:ring-primary transition-all"
+              className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/50 transition-all"
             >
               <img
                 src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face"

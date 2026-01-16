@@ -23,16 +23,15 @@ const Home = () => {
     <Layout>
       <div className="content-container py-6 lg:py-10">
         {/* Hero Section */}
-        {/* Hero Section */}
         <motion.section
-          className="relative overflow-hidden rounded-3xl bg-card border border-white/5 shadow-2xl mb-10 min-h-[500px] flex items-center"
+          className="relative overflow-hidden rounded-[2rem] bg-card/40 border border-border/50 shadow-premium backdrop-blur-xl mb-10 min-h-[520px] flex items-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {/* Optimized Simulated 3D Background */}
-          <div className="absolute inset-0 bg-background z-0">
-            <div className="absolute top-0 right-0 w-3/4 h-3/4 bg-primary/10 rounded-full blur-3xl opacity-50" />
-            <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-secondary/10 rounded-full blur-3xl opacity-50" />
+          <div className="absolute inset-0 z-0">
+            <div className="absolute -top-32 -left-40 w-[44rem] h-[44rem] bg-primary/20 rounded-full blur-3xl opacity-60" />
+            <div className="absolute -bottom-40 -right-40 w-[40rem] h-[40rem] bg-secondary/15 rounded-full blur-3xl opacity-60" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/20" />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 p-8 lg:p-16 z-10 w-full">
@@ -41,26 +40,27 @@ const Home = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="inline-block w-fit px-4 py-1.5 mb-6 bg-white/5 border border-white/10 text-primary text-xs font-bold uppercase tracking-[0.2em] rounded-full backdrop-blur-md"
+                className="inline-flex items-center gap-2 w-fit px-4 py-1.5 mb-6 bg-white/5 border border-white/10 text-foreground text-xs font-semibold uppercase tracking-[0.2em] rounded-full backdrop-blur-md"
               >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 Neural Collection
               </motion.span>
-              <h1 className="font-display text-5xl lg:text-7xl font-bold text-foreground leading-tight mb-6">
-                Next-Gen <span className="brain-gradient-text">Intelligence</span>
+              <h1 className="font-display text-5xl lg:text-7xl font-bold text-foreground leading-[1.05] mb-6">
+                Upgrade your <span className="brain-gradient-text">everyday</span>
               </h1>
               <p className="text-muted-foreground text-lg lg:text-xl mb-8 max-w-lg leading-relaxed">
-                Upgrade your lifestyle with Brainhub's curated selection of smart gadgets designed to amplify your potential.
+                Premium tech, clean design, and smarter shopping. Curated gadgets that feel as good as they look.
               </p>
               <div className="flex flex-wrap gap-4">
                 <button
                   onClick={() => navigate("/products")}
                   className="btn-premium px-8 py-4 text-lg"
                 >
-                  Shop Future
+                  Shop Collection
                 </button>
                 <button
                   onClick={() => navigate("/products")}
-                  className="px-8 py-4 border border-white/10 bg-white/5 backdrop-blur-sm rounded-xl font-medium hover:bg-white/10 transition-colors text-lg"
+                  className="px-8 py-4 border border-border/60 bg-card/30 backdrop-blur-sm rounded-xl font-medium hover:bg-white/5 transition-colors text-lg"
                 >
                   Explore
                 </button>
@@ -71,7 +71,7 @@ const Home = () => {
                 <motion.div
                   animate={{ rotateY: [-5, 5, -5], rotateX: [2, -2, 2] }}
                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-white/10 glass-card p-2"
+                  className="relative z-10 rounded-3xl overflow-hidden border border-border/50 glass-card p-2"
                 >
                   <img
                     src={products[0].image_url}
@@ -85,7 +85,7 @@ const Home = () => {
                   </div>
                 </motion.div>
               ) : (
-                <div className="w-full h-80 rounded-2xl bg-white/5 animate-pulse border border-white/10" />
+                <div className="w-full h-80 rounded-3xl bg-white/5 animate-pulse border border-white/10" />
               )}
             </div>
           </div>
@@ -99,8 +99,8 @@ const Home = () => {
                 key={category.id}
                 onClick={() => setActiveCategory(category.slug)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${activeCategory === category.slug
-                  ? "bg-primary text-primary-foreground shadow-gold-md"
-                  : "bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary"
+                  ? "bg-white/10 border border-white/10 text-foreground"
+                  : "bg-card/30 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
@@ -114,7 +114,7 @@ const Home = () => {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-2xl font-bold text-foreground">Featured</h2>
-            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
+            <button onClick={() => navigate("/products")} className="text-foreground/80 text-sm font-medium hover:text-foreground transition-colors">
               View All
             </button>
           </div>
@@ -141,7 +141,7 @@ const Home = () => {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-2xl font-bold text-foreground">New Arrivals</h2>
-            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
+            <button onClick={() => navigate("/products")} className="text-foreground/80 text-sm font-medium hover:text-foreground transition-colors">
               View All
             </button>
           </div>

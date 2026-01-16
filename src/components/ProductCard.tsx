@@ -31,18 +31,18 @@ const ProductCard = (product: ProductCardProps) => {
 
   return (
     <motion.div
-      className="group flex flex-col cursor-pointer glass-card rounded-2xl overflow-hidden hover:neon-shadow transition-all duration-300"
+      className="group flex flex-col cursor-pointer glass-card rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-premium hover:border-primary/30"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
       onClick={() => navigate(`/product/${product.slug}`)}
     >
       {/* Image Container */}
-      <div className="relative aspect-square w-full overflow-hidden bg-surface/50">
+      <div className="relative aspect-square w-full overflow-hidden bg-surface/40">
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
           {product.is_new_arrival && (
-            <span className="px-2.5 py-1 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider rounded-full">
+            <span className="px-2.5 py-1 bg-white/10 border border-white/10 text-foreground text-[10px] font-semibold uppercase tracking-wider rounded-full backdrop-blur-md">
               New
             </span>
           )}
@@ -53,9 +53,9 @@ const ProductCard = (product: ProductCardProps) => {
         {/* Favorite Button */}
         <button
           onClick={handleToggleFavorite}
-          className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all ${isFavorited
+          className={`absolute top-3 right-3 z-10 p-2 rounded-xl border border-white/10 backdrop-blur-md transition-all ${isFavorited
               ? "bg-primary text-primary-foreground"
-              : "bg-surface/20 text-muted-foreground hover:bg-surface/40 hover:text-foreground"
+              : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
             }`}
         >
           <span className={`material-symbols-outlined text-[20px] ${isFavorited ? "filled" : ""}`}>
@@ -68,13 +68,15 @@ const ProductCard = (product: ProductCardProps) => {
           className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-110"
           style={{ backgroundImage: `url('${product.image_url}')` }}
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
         {/* Quick Add Button */}
         <motion.button
           onClick={handleAddToCart}
           initial={{ opacity: 0, y: 10 }}
           whileHover={{ scale: 1.05 }}
-          className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: "linear-gradient(135deg, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)))" }}
         >
           <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
           <span className="hidden sm:inline">Add</span>
@@ -86,7 +88,7 @@ const ProductCard = (product: ProductCardProps) => {
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {product.brand || "Brainhub"}
         </p>
-        <h3 className="font-display text-lg font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="font-display text-lg font-bold text-foreground line-clamp-1 group-hover:brain-gradient-text transition-colors">
           {product.name}
         </h3>
 
@@ -102,7 +104,7 @@ const ProductCard = (product: ProductCardProps) => {
 
         {/* Price */}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-lg font-bold text-primary">{formatPrice(product.price)}</span>
+          <span className="text-lg font-bold">{formatPrice(product.price)}</span>
         </div>
       </div>
     </motion.div>

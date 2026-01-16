@@ -7,53 +7,46 @@
 
 @layer base {
   :root {
-    /* New High-Performance Theme: Proton Blue & Cyber Green */
-    --background: 220 15% 10%;
-    /* Darker, less noisy background */
+    --background: 240 20% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 222 15% 13%;
+    --card: 240 18% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 15% 13%;
+    --popover: 240 18% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 190 100% 50%;
-    /* Cyan/Proton Blue */
-    --primary-foreground: 220 15% 10%;
+    --primary: 266 88% 64%;
+    --primary-foreground: 240 20% 8%;
 
-    --secondary: 150 100% 50%;
-    /* Cyber Green */
-    --secondary-foreground: 220 15% 10%;
+    --secondary: 190 95% 55%;
+    --secondary-foreground: 240 20% 8%;
 
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 240 14% 18%;
+    --muted-foreground: 220 15% 72%;
 
-    --accent: 217 19% 27%;
+    --accent: 240 14% 18%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 190 100% 50%;
+    --border: 240 14% 22%;
+    --input: 240 14% 22%;
+    --ring: 266 88% 64%;
 
-    --radius: 0.5rem;
-    /* Sharper corners for a tech feel */
+    --radius: 1rem;
 
-    --surface: 222 15% 12%;
+    --surface: 240 16% 12%;
     --surface-foreground: 210 40% 98%;
 
-    --brain-gradient-start: 190 100% 50%;
-    --brain-gradient-end: 150 100% 50%;
+    --brain-gradient-start: 266 88% 64%;
+    --brain-gradient-end: 190 95% 55%;
   }
 
-  /* Force dark mode variables everywhere for this theme */
   .dark {
-    --background: 220 15% 10%;
+    --background: 240 20% 7%;
     --foreground: 210 40% 98%;
-    /* ... reuse lighter theme variables since we are forcing a unified dark tech theme */
   }
 }
 
@@ -114,37 +107,37 @@
     font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48;
   }
 
-  /* Simplified utility classes for performance */
   .brain-gradient-text {
     @apply text-primary;
-    /* Fallback for performance */
-    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
+    background: linear-gradient(to right, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .brain-gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    background: linear-gradient(135deg, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
   }
 
-  /* Reduced blur for performance */
   .glass-card {
-    @apply bg-card border border-border;
-    /* Removed backdrop-blur for performance */
+    @apply bg-card/60 border border-border/50 shadow-soft backdrop-blur-xl;
   }
 
   .btn-premium {
-    @apply bg-primary text-primary-foreground font-bold rounded-md px-6 py-3 transition-transform active:scale-95 hover:bg-opacity-90;
-    /* Removed heavy shadows */
+    @apply text-primary-foreground font-semibold rounded-xl px-6 py-3 shadow-gold-md transition-all active:scale-[0.98] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0;
+    background: linear-gradient(135deg, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
   }
 
   .input-premium {
-    @apply w-full px-4 py-3 rounded-md bg-muted/50 border border-input text-foreground font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none;
+    @apply w-full px-4 py-3 rounded-xl bg-surface/60 border border-input text-foreground font-medium placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/35 focus:border-primary/40 transition-all outline-none backdrop-blur-md;
   }
 
   .page-container {
-    @apply min-h-screen bg-background text-foreground;
+    @apply min-h-screen text-foreground;
+    background:
+      radial-gradient(1200px 700px at 12% -10%, hsl(var(--primary) / 0.22), transparent 55%),
+      radial-gradient(900px 600px at 92% 0%, hsl(var(--secondary) / 0.16), transparent 55%),
+      hsl(var(--background));
   }
 
   .content-container {

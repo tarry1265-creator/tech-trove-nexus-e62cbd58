@@ -10,10 +10,19 @@ const Wishlist = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        <h1 className="font-display text-2xl lg:text-3xl font-bold mb-8">Wishlist</h1>
+        <div className="glass-card rounded-3xl p-6 mb-8 flex items-start justify-between gap-6">
+          <div>
+            <h1 className="font-display text-2xl lg:text-3xl font-bold">Wishlist</h1>
+            <p className="text-muted-foreground mt-1">Saved for later.</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-muted-foreground">Items</div>
+            <div className="text-2xl font-bold text-foreground">{wishlist.length}</div>
+          </div>
+        </div>
 
         {wishlist.length === 0 ? (
-          <div className="text-center py-20">
+          <div className="glass-card rounded-3xl p-10 text-center">
             <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">favorite_border</span>
             <p className="text-muted-foreground mb-6">Your wishlist is empty</p>
             <button onClick={() => navigate("/products")} className="btn-premium px-8 py-3">
@@ -26,7 +35,6 @@ const Wishlist = () => {
               <ProductCard
                 key={product.id}
                 {...product}
-              // isFavorited implicitly handled by context in ProductCard
               />
             ))}
           </div>
