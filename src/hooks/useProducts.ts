@@ -9,6 +9,7 @@ export interface Product {
   price: number;
   currency: string;
   image_url: string;
+  additional_images: string[] | null;
   category_id: string | null;
   brand: string | null;
   rating: number | null;
