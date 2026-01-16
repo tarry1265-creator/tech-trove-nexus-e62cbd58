@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* New High-Performance Theme: Proton Blue & Cyber Green */
+    --background: 220 15% 10%;
+    /* Darker, less noisy background */
+    --foreground: 210 40% 98%;
+
+    --card: 222 15% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 15% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 190 100% 50%;
+    /* Cyan/Proton Blue */
+    --primary-foreground: 220 15% 10%;
+
+    --secondary: 150 100% 50%;
+    /* Cyber Green */
+    --secondary-foreground: 220 15% 10%;
+
+    --muted: 217 19% 27%;
+    --muted-foreground: 215 20% 70%;
+
+    --accent: 217 19% 27%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 190 100% 50%;
+
+    --radius: 0.5rem;
+    /* Sharper corners for a tech feel */
+
+    --surface: 222 15% 12%;
+    --surface-foreground: 210 40% 98%;
+
+    --brain-gradient-start: 190 100% 50%;
+    --brain-gradient-end: 150 100% 50%;
+  }
+
+  /* Force dark mode variables everywhere for this theme */
+  .dark {
+    --background: 220 15% 10%;
+    --foreground: 210 40% 98%;
+    /* ... reuse lighter theme variables since we are forcing a unified dark tech theme */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* Hide scrollbar globally */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  html {
+    @apply dark;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer components {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 48;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48;
+  }
+
+  /* Simplified utility classes for performance */
+  .brain-gradient-text {
+    @apply text-primary;
+    /* Fallback for performance */
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .brain-gradient-bg {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  }
+
+  /* Reduced blur for performance */
+  .glass-card {
+    @apply bg-card border border-border;
+    /* Removed backdrop-blur for performance */
+  }
+
+  .btn-premium {
+    @apply bg-primary text-primary-foreground font-bold rounded-md px-6 py-3 transition-transform active:scale-95 hover:bg-opacity-90;
+    /* Removed heavy shadows */
+  }
+
+  .input-premium {
+    @apply w-full px-4 py-3 rounded-md bg-muted/50 border border-input text-foreground font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none;
+  }
+
+  .page-container {
+    @apply min-h-screen bg-background text-foreground;
+  }
+
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen relative;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Minimal float animation */
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+}
