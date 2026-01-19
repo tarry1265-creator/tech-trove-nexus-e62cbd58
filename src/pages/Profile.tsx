@@ -1,10 +1,19 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { mockUser } from "@/data/products";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const user = mockUser;
+  const { user, profile, signOut, loading } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login");
+    }
+  }, [user, loading, navigate]);
 
   const menuItems = [
     { icon: "shopping_bag", label: "My Orders", path: "/orders" },
@@ -15,33 +24,69 @@ const Profile = () => {
     { icon: "help", label: "Help & Support", path: "/help" },
   ];
 
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+    navigate("/login");
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="content-container py-20 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const displayName = profile?.username || user.email?.split("@")[0] || "User";
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
+
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
         <div className="glass-card rounded-3xl p-6 mb-10 flex items-center gap-6">
-          <img 
-            src={user.avatar} 
-            alt={user.name}
-            className="w-20 h-20 rounded-2xl object-cover border border-border/50"
-          />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={displayName}
+              className="w-20 h-20 rounded-2xl object-cover border border-border/50"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center border border-border/50">
+              <span className="material-symbols-outlined text-4xl text-primary">
+                person
+              </span>
+            </div>
+          )}
           <div>
-            <h1 className="font-display text-2xl font-bold">{user.name}</h1>
+            <h1 className="font-display text-2xl font-bold">{displayName}</h1>
             <p className="text-muted-foreground">{user.email}</p>
-            <p className="text-sm text-muted-foreground mt-1">Member since {user.memberSince}</p>
+            {profile?.username && (
+              <p className="text-sm text-primary mt-1">@{profile.username}</p>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-10">
           <div className="glass-card rounded-3xl p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{user.orders}</p>
+            <p className="text-2xl font-bold text-foreground">0</p>
             <p className="text-sm text-muted-foreground">Orders</p>
           </div>
           <div className="glass-card rounded-3xl p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{user.wishlistCount}</p>
+            <p className="text-2xl font-bold text-foreground">0</p>
             <p className="text-sm text-muted-foreground">Wishlist</p>
           </div>
           <div className="glass-card rounded-3xl p-4 text-center">
-            <p className="text-2xl font-bold brain-gradient-text">Gold</p>
+            <p className="text-2xl font-bold brain-gradient-text">New</p>
             <p className="text-sm text-muted-foreground">Member</p>
           </div>
         </div>
@@ -62,8 +107,8 @@ const Profile = () => {
           ))}
         </div>
 
-        <button 
-          onClick={() => navigate("/login")}
+        <button
+          onClick={handleSignOut}
           className="w-full mt-6 p-4 border border-destructive/70 text-destructive rounded-2xl hover:bg-destructive/10 transition-colors font-medium"
         >
           Log Out
