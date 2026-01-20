@@ -29,9 +29,9 @@ const Checkout = () => {
   return (
     <Layout showBottomNav={false}>
       <div className="content-container py-6 lg:py-10">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors">
-          <span className="material-symbols-outlined">arrow_back</span>
-          <span>Back</span>
+        <button onClick={() => navigate("/home")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <span className="material-symbols-outlined text-xl">arrow_back</span>
+          <span className="text-sm font-medium">Back to Home</span>
         </button>
 
         <div className="glass-card rounded-3xl p-6 mb-8 flex items-start justify-between gap-6">

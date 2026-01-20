@@ -67,9 +67,9 @@ const ProductDetails = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
-          <span className="material-symbols-outlined">arrow_back</span>
-          <span>Back</span>
+        <button onClick={() => navigate("/home")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <span className="material-symbols-outlined text-xl">arrow_back</span>
+          <span className="text-sm font-medium">Back to Home</span>
         </button>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">

@@ -21,9 +21,6 @@ const Profile = () => {
     { icon: "shopping_bag", label: "My Orders", path: "/orders" },
     { icon: "favorite", label: "Wishlist", path: "/wishlist" },
     { icon: "location_on", label: "Addresses", path: "/addresses" },
-    { icon: "credit_card", label: "Payment Methods", path: "/payment" },
-    { icon: "settings", label: "Settings", path: "/settings" },
-    { icon: "help", label: "Help & Support", path: "/help" },
   ];
 
   const handleSignOut = async () => {
@@ -125,8 +122,17 @@ const Profile = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        <div className="glass-card rounded-3xl p-6 mb-10 flex items-center gap-6">
-          <div className="relative group">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate("/home")}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <span className="material-symbols-outlined text-xl">arrow_back</span>
+          <span className="text-sm font-medium">Back to Home</span>
+        </button>
+
+        <div className="glass-card rounded-3xl p-4 sm:p-6 mb-10 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <div className="relative group flex-shrink-0">
             <input
               type="file"
               ref={fileInputRef}
@@ -173,11 +179,11 @@ const Profile = () => {
               </button>
             )}
           </div>
-          <div>
-            <h1 className="font-display text-2xl font-bold">{displayName}</h1>
-            <p className="text-muted-foreground">{user.email}</p>
+          <div className="text-center sm:text-left min-w-0 w-full">
+            <h1 className="font-display text-2xl font-bold truncate">{displayName}</h1>
+            <p className="text-muted-foreground text-sm sm:text-base truncate max-w-full">{user.email}</p>
             {profile?.username && (
-              <p className="text-sm text-primary mt-1">@{profile.username}</p>
+              <p className="text-sm text-primary mt-1 truncate">@{profile.username}</p>
             )}
           </div>
         </div>

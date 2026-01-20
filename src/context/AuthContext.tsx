@@ -136,33 +136,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateAvatar = async (file: File) => {
     if (!user) return { error: new Error("No user logged in") };
 
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${user.id}/avatar.${fileExt}`;
+    try {
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || 'jpg';
+      const filePath = `${user.id}/avatar.${fileExt}`;
 
-    // Upload file to storage
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, file, { upsert: true });
+      // First, try to remove existing avatar files
+      const { data: existingFiles } = await supabase.storage
+        .from("avatars")
+        .list(user.id);
 
-    if (uploadError) return { error: uploadError as Error };
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToRemove = existingFiles.map((f) => `${user.id}/${f.name}`);
+        await supabase.storage.from("avatars").remove(filesToRemove);
+      }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(filePath);
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
 
-    const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        return { error: new Error(uploadError.message || "Failed to upload image") };
+      }
 
-    // Update profile with new avatar URL
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: avatarUrl })
-      .eq("user_id", user.id);
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
 
-    if (updateError) return { error: updateError as Error };
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-    setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : null));
-    return { error: null, url: avatarUrl };
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        return { error: new Error(updateError.message || "Failed to update profile") };
+      }
+
+      setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : null));
+      return { error: null, url: avatarUrl };
+    } catch (err) {
+      console.error("Avatar update error:", err);
+      return { error: new Error("An unexpected error occurred while uploading") };
+    }
   };
 
   const removeAvatar = async () => {

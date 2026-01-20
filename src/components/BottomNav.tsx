@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
@@ -17,13 +18,13 @@ const navItems: NavItem[] = [
   { icon: "person_outline", filledIcon: "person", label: "Profile", path: "/profile" },
 ];
 
-const BottomNav = () => {
+const BottomNav = forwardRef<HTMLElement, object>((_, ref) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartCount } = useCart();
 
   return (
-    <nav className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md pb-safe">
+    <nav ref={ref} className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md pb-safe">
       <div className="flex justify-around items-center h-16 rounded-2xl bg-card/70 border border-border/50 backdrop-blur-xl shadow-soft">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
@@ -64,6 +65,8 @@ const BottomNav = () => {
       </div>
     </nav>
   );
-};
+});
+
+BottomNav.displayName = "BottomNav";
 
 export default BottomNav;
