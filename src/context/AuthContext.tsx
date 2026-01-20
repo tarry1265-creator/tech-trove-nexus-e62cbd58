@@ -18,9 +18,10 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateUsername: (username: string) => Promise<{ error: Error | null }>;
+  updateAvatar: (file: File) => Promise<{ error: Error | null; url?: string }>;
+  removeAvatar: () => Promise<{ error: Error | null }>;
   needsUsername: boolean;
 }
 
@@ -108,17 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
-  const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/home`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
-    return { error: error as Error | null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -143,6 +133,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const updateAvatar = async (file: File) => {
+    if (!user) return { error: new Error("No user logged in") };
+
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+
+    // Upload file to storage
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) return { error: uploadError as Error };
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    // Update profile with new avatar URL
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: avatarUrl })
+      .eq("user_id", user.id);
+
+    if (updateError) return { error: updateError as Error };
+
+    setProfile((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : null));
+    return { error: null, url: avatarUrl };
+  };
+
+  const removeAvatar = async () => {
+    if (!user) return { error: new Error("No user logged in") };
+
+    // List files in user's folder
+    const { data: files } = await supabase.storage
+      .from("avatars")
+      .list(user.id);
+
+    if (files && files.length > 0) {
+      const filesToRemove = files.map((f) => `${user.id}/${f.name}`);
+      await supabase.storage.from("avatars").remove(filesToRemove);
+    }
+
+    // Update profile to remove avatar URL
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("user_id", user.id);
+
+    if (!error) {
+      setProfile((prev) => (prev ? { ...prev, avatar_url: null } : null));
+    }
+
+    return { error: error as Error | null };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -152,9 +200,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         signUp,
         signIn,
-        signInWithGoogle,
         signOut,
         updateUsername,
+        updateAvatar,
+        removeAvatar,
         needsUsername,
       }}
     >

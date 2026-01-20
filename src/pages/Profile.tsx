@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -6,8 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, signOut, updateAvatar, removeAvatar, loading } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -33,6 +35,76 @@ const Profile = () => {
     navigate("/login");
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const { error } = await updateAvatar(file);
+    setIsUploading(false);
+
+    if (error) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Avatar updated",
+        description: "Your profile picture has been updated.",
+      });
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setIsUploading(true);
+    const { error } = await removeAvatar();
+    setIsUploading(false);
+
+    if (error) {
+      toast({
+        title: "Remove failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Avatar removed",
+        description: "Your profile picture has been removed.",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -54,19 +126,53 @@ const Profile = () => {
     <Layout>
       <div className="content-container py-6 lg:py-10">
         <div className="glass-card rounded-3xl p-6 mb-10 flex items-center gap-6">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="w-20 h-20 rounded-2xl object-cover border border-border/50"
+          <div className="relative group">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
             />
-          ) : (
-            <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center border border-border/50">
-              <span className="material-symbols-outlined text-4xl text-primary">
-                person
-              </span>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-20 h-20 rounded-2xl object-cover border border-border/50"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center border border-border/50">
+                <span className="material-symbols-outlined text-4xl text-primary">
+                  person
+                </span>
+              </div>
+            )}
+            {/* Overlay on hover */}
+            <div
+              onClick={isUploading ? undefined : handleAvatarClick}
+              className={`absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+                isUploading ? "cursor-wait" : "cursor-pointer"
+              }`}
+            >
+              {isUploading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              ) : (
+                <span className="material-symbols-outlined text-white text-2xl">
+                  photo_camera
+                </span>
+              )}
             </div>
-          )}
+            {/* Remove button */}
+            {avatarUrl && !isUploading && (
+              <button
+                onClick={handleRemoveAvatar}
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove avatar"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            )}
+          </div>
           <div>
             <h1 className="font-display text-2xl font-bold">{displayName}</h1>
             <p className="text-muted-foreground">{user.email}</p>
