@@ -1,23 +1,43 @@
-import { useState } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
-import { useProducts, useFeaturedProducts, useNewArrivals, useCategories } from "@/hooks/useProducts";
+import { useProducts, useFeaturedProducts, useNewArrivals, useCategories, useProductsByCategory } from "@/hooks/useProducts";
 
 const Home = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("all");
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: featuredProducts = [], isLoading: featuredLoading } = useFeaturedProducts();
   const { data: newProducts = [], isLoading: newLoading } = useNewArrivals();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: filteredProducts = [], isLoading: filteredLoading } = useProductsByCategory(activeCategory);
 
-  const allCategories = [
+  const allCategories = useMemo(() => [
     { id: "all", name: "All", slug: "all", icon: "apps" },
     ...categories.map(cat => ({ ...cat, icon: cat.icon || "category" }))
-  ];
+  ], [categories]);
+
+  const scrollCategories = useCallback((direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 200;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
+  const handleCategoryClick = useCallback((slug: string) => {
+    setActiveCategory(slug);
+  }, []);
+
+  // Display filtered products when a category is selected
+  const displayProducts = activeCategory === "all" ? featuredProducts : filteredProducts;
+  const isDisplayLoading = activeCategory === "all" ? featuredLoading : filteredLoading;
 
   return (
     <Layout>
@@ -91,48 +111,79 @@ const Home = () => {
           </div>
         </motion.section>
 
-        {/* Categories */}
+        {/* Categories with Navigation Arrows */}
         <section className="mb-10">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {allCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.slug)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${activeCategory === category.slug
-                  ? "bg-white/10 border border-white/10 text-foreground"
-                  : "bg-card/30 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
-                <span className="text-sm font-medium">{category.name}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            {/* Left Arrow */}
+            <button
+              onClick={() => scrollCategories('left')}
+              className="flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 flex items-center justify-center hover:bg-white/10 transition-colors"
+              aria-label="Scroll categories left"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+
+            {/* Scrollable Categories */}
+            <div 
+              ref={categoryScrollRef}
+              className="flex gap-3 overflow-x-auto no-scrollbar pb-2 flex-1"
+            >
+              {allCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.slug)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all whitespace-nowrap ${activeCategory === category.slug
+                    ? "bg-primary text-primary-foreground border border-primary"
+                    : "bg-card/30 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
+                  <span className="text-sm font-medium">{category.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Right Arrow */}
+            <button
+              onClick={() => scrollCategories('right')}
+              className="flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 flex items-center justify-center hover:bg-white/10 transition-colors"
+              aria-label="Scroll categories right"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
           </div>
         </section>
 
-        {/* Featured Products */}
+        {/* Featured/Filtered Products */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-2xl font-bold text-foreground">Featured</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground">
+              {activeCategory === "all" ? "Featured" : allCategories.find(c => c.slug === activeCategory)?.name || "Products"}
+            </h2>
             <button onClick={() => navigate("/products")} className="text-foreground/80 text-sm font-medium hover:text-foreground transition-colors">
               View All
             </button>
           </div>
-          {featuredLoading ? (
+          {isDisplayLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="aspect-square rounded-2xl bg-surface animate-pulse" />
               ))}
             </div>
-          ) : (
+          ) : displayProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {featuredProducts.map((product) => (
+              {displayProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   {...product}
                   onAddToCart={() => { }}
                 />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <span className="material-symbols-outlined text-4xl mb-2">inventory_2</span>
+              <p>No products found in this category</p>
             </div>
           )}
         </section>

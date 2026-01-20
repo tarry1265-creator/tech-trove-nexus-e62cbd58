@@ -14,6 +14,15 @@ const Cart = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate("/home")}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <span className="material-symbols-outlined text-xl">arrow_back</span>
+          <span className="text-sm font-medium">Back to Home</span>
+        </button>
+
         <div className="glass-card rounded-3xl p-6 mb-8 flex items-start justify-between gap-6">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Shopping Cart</h1>
