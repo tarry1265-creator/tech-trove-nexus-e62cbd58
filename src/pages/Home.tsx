@@ -114,10 +114,10 @@ const Home = () => {
         {/* Categories with Navigation Arrows */}
         <section className="mb-10">
           <div className="flex items-center gap-2">
-            {/* Left Arrow */}
+            {/* Left Arrow - Hidden on mobile/tablet */}
             <button
               onClick={() => scrollCategories('left')}
-              className="flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 flex items-center justify-center hover:bg-white/10 transition-colors"
+              className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 items-center justify-center hover:bg-white/10 transition-colors"
               aria-label="Scroll categories left"
             >
               <span className="material-symbols-outlined text-lg">chevron_left</span>
@@ -143,10 +143,10 @@ const Home = () => {
               ))}
             </div>
 
-            {/* Right Arrow */}
+            {/* Right Arrow - Hidden on mobile/tablet */}
             <button
               onClick={() => scrollCategories('right')}
-              className="flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 flex items-center justify-center hover:bg-white/10 transition-colors"
+              className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-card/50 border border-border/60 items-center justify-center hover:bg-white/10 transition-colors"
               aria-label="Scroll categories right"
             >
               <span className="material-symbols-outlined text-lg">chevron_right</span>
