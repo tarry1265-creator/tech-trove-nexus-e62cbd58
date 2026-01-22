@@ -20,6 +20,7 @@ const DesktopNav = () => {
   const navLinks = [
     { label: "Home", path: "/home" },
     { label: "Shop", path: "/products" },
+    { label: "Repair", path: "/repair" },
     { label: "New Arrivals", path: "/products?filter=new" },
   ];
 

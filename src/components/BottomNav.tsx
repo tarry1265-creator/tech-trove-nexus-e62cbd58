@@ -12,7 +12,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: "home", filledIcon: "home", label: "Home", path: "/home" },
-  { icon: "search", label: "Search", path: "/search" },
+  { icon: "build", filledIcon: "build", label: "Repair", path: "/repair" },
   { icon: "shopping_bag", label: "Cart", path: "/cart" },
   { icon: "favorite_border", filledIcon: "favorite", label: "Wishlist", path: "/wishlist" },
   { icon: "person_outline", filledIcon: "person", label: "Profile", path: "/profile" },
