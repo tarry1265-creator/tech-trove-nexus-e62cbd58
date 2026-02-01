@@ -104,7 +104,11 @@ const Repair = () => {
       if (error) throw error;
 
       const whatsappMessage = encodeURIComponent(data.message);
-      const whatsappUrl = `https://wa.me/2349127204575?text=${whatsappMessage}`;
+      // Use whatsapp:// scheme to open app directly on mobile, fallback to wa.me for web
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const whatsappUrl = isMobile 
+        ? `whatsapp://send?phone=2349127204575&text=${whatsappMessage}`
+        : `https://wa.me/2349127204575?text=${whatsappMessage}`;
       
       window.open(whatsappUrl, "_blank");
 
