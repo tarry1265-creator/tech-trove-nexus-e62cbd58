@@ -2,14 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useProducts, useUpdateProductStock, formatPrice } from "@/hooks/useProducts";
-import { useIsAdmin } from "@/hooks/useAdmin";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const updateStock = useUpdateProductStock();
   
@@ -48,7 +44,7 @@ const Admin = () => {
       setEditingId(null);
     } catch (error) {
       console.error("Error updating stock:", error);
-      toast.error("Failed to update stock. Make sure you have admin permissions.");
+      toast.error("Failed to update stock");
     }
   };
 
@@ -63,46 +59,6 @@ const Admin = () => {
     if (quantity <= 5) return "text-orange-500";
     return "text-green-600";
   };
-
-  if (authLoading || adminLoading) {
-    return (
-      <Layout>
-        <div className="content-container py-20 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Layout>
-        <div className="content-container py-20 text-center">
-          <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">lock</span>
-          <h1 className="font-display text-2xl font-bold mb-2">Login Required</h1>
-          <p className="text-muted-foreground mb-6">Please login to access the admin panel</p>
-          <button onClick={() => navigate("/login")} className="btn-primary">
-            Login
-          </button>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <Layout>
-        <div className="content-container py-20 text-center">
-          <span className="material-symbols-outlined text-6xl text-destructive mb-4">block</span>
-          <h1 className="font-display text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">You don't have permission to access this page</p>
-          <button onClick={() => navigate("/home")} className="btn-primary">
-            Go Home
-          </button>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

@@ -76,11 +76,11 @@ const ProductCard = (product: ProductCardProps) => {
           style={{ backgroundImage: `url('${product.image_url}')` }}
         />
 
-        {/* Quick Add Button */}
+        {/* Quick Add Button - Always visible on mobile, hover on desktop */}
         {!isOutOfStock && (
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-90"
+            className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:opacity-90"
           >
             <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
             <span className="hidden sm:inline">Add</span>

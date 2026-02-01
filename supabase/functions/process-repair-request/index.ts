@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { deviceName, deviceModel, damageDescription, hasImage } = await req.json();
+    const { deviceName, deviceModel, damageDescription, imageUrl } = await req.json();
 
     if (!deviceName || !damageDescription) {
       return new Response(
@@ -43,7 +43,8 @@ serve(async (req) => {
             Keep the message under 500 characters.
             Format it nicely with emojis for better readability.
             Start with a greeting and end with a request for a quote or callback.
-            Do not include any markdown formatting, just plain text suitable for WhatsApp.`,
+            Do not include any markdown formatting, just plain text suitable for WhatsApp.
+            ${imageUrl ? "IMPORTANT: The customer has provided a photo of the damage. Include the image URL in your message so the repair team can view it. Make sure to mention they can click the link to see the photo." : ""}`,
           },
           {
             role: "user",
@@ -52,7 +53,7 @@ serve(async (req) => {
 Device: ${deviceName}
 ${deviceModel ? `Model/Serial: ${deviceModel}` : ""}
 Damage Description: ${damageDescription}
-${hasImage ? "Note: Customer has a photo of the damage to share." : ""}`,
+${imageUrl ? `Photo of damage: ${imageUrl}` : ""}`,
           },
         ],
       }),
@@ -71,6 +72,7 @@ ${hasImage ? "Note: Customer has a photo of the damage to share." : ""}`,
 📱 Device: ${deviceName}
 ${deviceModel ? `📋 Model: ${deviceModel}\n` : ""}
 ❌ Issue: ${damageDescription}
+${imageUrl ? `\n📸 Photo: ${imageUrl}` : ""}
 
 Please let me know the repair cost and timeline. Thank you!`;
 
