@@ -242,3 +242,33 @@ export const useUpdateProductStock = () => {
     },
   });
 };
+
+// Update product details (stock and price)
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      productId, 
+      stock_quantity, 
+      price 
+    }: { 
+      productId: string; 
+      stock_quantity: number;
+      price: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("products")
+        .update({ stock_quantity, price })
+        .eq("id", productId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+};

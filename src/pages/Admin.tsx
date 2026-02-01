@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { useProducts, useUpdateProductStock, formatPrice } from "@/hooks/useProducts";
+import { useProducts, useUpdateProduct, formatPrice } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
 const Admin = () => {
   const navigate = useNavigate();
   const { data: products = [], isLoading: productsLoading } = useProducts();
-  const updateStock = useUpdateProductStock();
+  const updateProduct = useUpdateProduct();
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stockValue, setStockValue] = useState<string>("");
+  const [priceValue, setPriceValue] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter products by search
@@ -26,31 +27,44 @@ const Admin = () => {
     return stockA - stockB;
   });
 
-  const handleEdit = (productId: string, currentStock: number | null) => {
+  const handleEdit = (productId: string, currentStock: number | null, currentPrice: number) => {
     setEditingId(productId);
     setStockValue(String(currentStock ?? 0));
+    setPriceValue(String(currentPrice));
   };
 
   const handleSave = async (productId: string) => {
     const quantity = parseInt(stockValue, 10);
+    const price = parseFloat(priceValue);
+    
     if (isNaN(quantity) || quantity < 0) {
       toast.error("Please enter a valid stock quantity");
       return;
     }
+    
+    if (isNaN(price) || price < 0) {
+      toast.error("Please enter a valid price");
+      return;
+    }
 
     try {
-      await updateStock.mutateAsync({ productId, quantity });
-      toast.success("Stock updated successfully");
+      await updateProduct.mutateAsync({ 
+        productId, 
+        stock_quantity: quantity,
+        price: price
+      });
+      toast.success("Product updated successfully");
       setEditingId(null);
     } catch (error) {
-      console.error("Error updating stock:", error);
-      toast.error("Failed to update stock");
+      console.error("Error updating product:", error);
+      toast.error("Failed to update product. Check console for details.");
     }
   };
 
   const handleCancel = () => {
     setEditingId(null);
     setStockValue("");
+    setPriceValue("");
   };
 
   const getStockStatusColor = (quantity: number | null) => {
@@ -75,7 +89,7 @@ const Admin = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage product inventory</p>
+            <p className="text-muted-foreground mt-1">Manage product inventory and pricing</p>
           </div>
           
           {/* Stats */}
@@ -129,7 +143,7 @@ const Admin = () => {
                   <tr>
                     <th className="text-left p-4 text-sm font-semibold text-foreground">Product</th>
                     <th className="text-left p-4 text-sm font-semibold text-foreground">Brand</th>
-                    <th className="text-left p-4 text-sm font-semibold text-foreground">Price</th>
+                    <th className="text-left p-4 text-sm font-semibold text-foreground">Price (₦)</th>
                     <th className="text-left p-4 text-sm font-semibold text-foreground">Stock</th>
                     <th className="text-left p-4 text-sm font-semibold text-foreground">Status</th>
                     <th className="text-right p-4 text-sm font-semibold text-foreground">Actions</th>
@@ -156,7 +170,22 @@ const Admin = () => {
                           </div>
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">{product.brand || "-"}</td>
-                        <td className="p-4 text-sm font-medium">{formatPrice(product.price)}</td>
+                        <td className="p-4">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={priceValue}
+                              onChange={(e) => setPriceValue(e.target.value)}
+                              className="w-28 px-2 py-1 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                              min="0"
+                              step="100"
+                            />
+                          ) : (
+                            <span className="font-medium text-foreground">
+                              {formatPrice(product.price)}
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4">
                           {isEditing ? (
                             <input
@@ -193,7 +222,7 @@ const Admin = () => {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => handleSave(product.id)}
-                                disabled={updateStock.isPending}
+                                disabled={updateProduct.isPending}
                                 className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                               >
                                 <span className="material-symbols-outlined text-lg">check</span>
@@ -207,7 +236,7 @@ const Admin = () => {
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleEdit(product.id, product.stock_quantity)}
+                              onClick={() => handleEdit(product.id, product.stock_quantity, product.price)}
                               className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                             >
                               <span className="material-symbols-outlined text-lg">edit</span>
