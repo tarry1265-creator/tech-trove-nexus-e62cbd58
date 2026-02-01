@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useState } from "react";
 
@@ -8,6 +8,7 @@ const DesktopNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cartCount } = useCart();
+  const { user, profile } = useAuth();
   const { data: products = [] } = useProducts();
   const [showBrands, setShowBrands] = useState(false);
 
@@ -27,18 +28,18 @@ const DesktopNav = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="hidden lg:block sticky top-4 z-50">
+    <header className="hidden lg:block sticky top-0 z-50 bg-background border-b border-border">
       <div className="content-container">
-        <div className="flex items-center justify-between h-16 px-5 rounded-2xl bg-card/60 border border-border/50 backdrop-blur-xl shadow-soft">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
             onClick={() => navigate("/home")}
-            className="flex items-center gap-3 group"
+            className="flex items-center gap-2 group"
           >
-            <div className="relative">
-              <span className="material-symbols-outlined brain-gradient-text text-3xl">bolt</span>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary-foreground text-xl">memory</span>
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight text-foreground group-hover:brain-gradient-text transition-all select-none">
+            <span className="font-display text-xl font-bold tracking-tight text-foreground">
               BRAINHUB
             </span>
           </button>
@@ -49,18 +50,12 @@ const DesktopNav = () => {
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={`relative px-4 py-2 rounded-full font-sans text-sm font-medium transition-colors ${isActive(link.path)
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(link.path)
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
               >
-                {isActive(link.path) && (
-                  <motion.div
-                    layoutId="activeNav"
-                    className="absolute inset-0 rounded-full bg-white/5 border border-border/40"
-                  />
-                )}
-                <span className="relative">{link.label}</span>
+                {link.label}
               </button>
             ))}
 
@@ -71,53 +66,48 @@ const DesktopNav = () => {
               onMouseLeave={() => setShowBrands(false)}
             >
               <button
-                className={`relative px-4 py-2 rounded-full font-sans text-sm font-medium transition-colors flex items-center gap-1 ${location.search.includes("brand") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${location.search.includes("brand") 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
               >
                 Brands
                 <span className="material-symbols-outlined text-[16px]">expand_more</span>
               </button>
 
-              <AnimatePresence>
-                {showBrands && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 pt-4 w-48"
-                  >
-                    <div className="bg-card/70 border border-border/50 rounded-2xl shadow-soft backdrop-blur-xl overflow-hidden p-2">
-                      {brands.length > 0 ? (
-                        <div className="flex flex-col gap-1 max-h-64 overflow-y-auto no-scrollbar">
-                          {brands.map(brand => (
-                            <button
-                              key={brand}
-                              onClick={() => {
-                                navigate(`/products?brand=${encodeURIComponent(brand)}`);
-                                setShowBrands(false);
-                              }}
-                              className="text-left px-3 py-2 rounded-xl hover:bg-surface/70 text-sm text-foreground/80 hover:text-foreground transition-colors"
-                            >
-                              {brand}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="p-3 text-xs text-muted-foreground">No brands found</div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {showBrands && (
+                <div className="absolute top-full left-0 pt-2 w-48">
+                  <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden p-2">
+                    {brands.length > 0 ? (
+                      <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+                        {brands.map(brand => (
+                          <button
+                            key={brand}
+                            onClick={() => {
+                              navigate(`/products?brand=${encodeURIComponent(brand)}`);
+                              setShowBrands(false);
+                            }}
+                            className="text-left px-3 py-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors"
+                          >
+                            {brand}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 text-xs text-muted-foreground">No brands found</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Search */}
             <button
               onClick={() => navigate("/search")}
-              className="p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">search</span>
             </button>
@@ -125,7 +115,7 @@ const DesktopNav = () => {
             {/* Wishlist */}
             <button
               onClick={() => navigate("/wishlist")}
-              className="p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">favorite_border</span>
             </button>
@@ -133,11 +123,11 @@ const DesktopNav = () => {
             {/* Cart */}
             <button
               onClick={() => navigate("/cart")}
-              className="relative p-2.5 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+              className="relative p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                   {cartCount}
                 </span>
               )}
@@ -146,13 +136,19 @@ const DesktopNav = () => {
             {/* Profile */}
             <button
               onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/50 transition-all"
+              className="w-9 h-9 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors"
             >
-              <img
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face"
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <span className="material-symbols-outlined text-muted-foreground text-lg">person</span>
+                </div>
+              )}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Product {
@@ -40,7 +40,21 @@ export const formatPrice = (price: number): string => {
   }).format(price);
 };
 
-// Fetch all products
+// Get stock status message
+export const getStockStatus = (quantity: number | null): { message: string; type: 'available' | 'low' | 'out' } => {
+  if (quantity === null || quantity === undefined) {
+    return { message: '', type: 'available' };
+  }
+  if (quantity === 0) {
+    return { message: 'Out of stock', type: 'out' };
+  }
+  if (quantity <= 5) {
+    return { message: `Only ${quantity} left`, type: 'low' };
+  }
+  return { message: 'In stock', type: 'available' };
+};
+
+// Fetch all products with optimized caching
 export const useProducts = () => {
   return useQuery({
     queryKey: ["products"],
@@ -56,6 +70,8 @@ export const useProducts = () => {
       if (error) throw error;
       return data as Product[];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes cache
   });
 };
 
@@ -76,6 +92,8 @@ export const useFeaturedProducts = () => {
       if (error) throw error;
       return data as Product[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 };
 
@@ -96,6 +114,8 @@ export const useNewArrivals = () => {
       if (error) throw error;
       return data as Product[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 };
 
@@ -119,6 +139,8 @@ export const useProduct = (slug: string | undefined) => {
       return data as Product;
     },
     enabled: !!slug,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 };
 
@@ -152,6 +174,8 @@ export const useProductsByCategory = (categorySlug: string | null) => {
       if (error) throw error;
       return data as Product[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 };
 
@@ -175,6 +199,7 @@ export const useSearchProducts = (query: string) => {
       return data as Product[];
     },
     enabled: query.length >= 2,
+    staleTime: 1000 * 60 * 2,
   });
 };
 
@@ -190,6 +215,30 @@ export const useCategories = () => {
 
       if (error) throw error;
       return data as Category[];
+    },
+    staleTime: 1000 * 60 * 10, // Categories change less frequently
+    gcTime: 1000 * 60 * 60,
+  });
+};
+
+// Update product stock (admin only)
+export const useUpdateProductStock = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
+      const { data, error } = await supabase
+        .from("products")
+        .update({ stock_quantity: quantity })
+        .eq("id", productId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 };

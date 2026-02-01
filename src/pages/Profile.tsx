@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, updateAvatar, removeAvatar, loading } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -40,7 +42,6 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file",
@@ -50,7 +51,6 @@ const Profile = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -77,7 +77,6 @@ const Profile = () => {
       });
     }
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -131,7 +130,7 @@ const Profile = () => {
           <span className="text-sm font-medium">Back to Home</span>
         </button>
 
-        <div className="glass-card rounded-3xl p-4 sm:p-6 mb-10 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+        <div className="card p-4 sm:p-6 mb-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="relative group flex-shrink-0">
             <input
               type="file"
@@ -144,31 +143,29 @@ const Profile = () => {
               <img
                 src={avatarUrl}
                 alt={displayName}
-                className="w-20 h-20 rounded-2xl object-cover border border-border/50"
+                className="w-20 h-20 rounded-xl object-cover border border-border"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center border border-border/50">
+              <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center border border-border">
                 <span className="material-symbols-outlined text-4xl text-primary">
                   person
                 </span>
               </div>
             )}
-            {/* Overlay on hover */}
             <div
               onClick={isUploading ? undefined : handleAvatarClick}
-              className={`absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+              className={`absolute inset-0 rounded-xl bg-foreground/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
                 isUploading ? "cursor-wait" : "cursor-pointer"
               }`}
             >
               {isUploading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-background"></div>
               ) : (
-                <span className="material-symbols-outlined text-white text-2xl">
+                <span className="material-symbols-outlined text-background text-2xl">
                   photo_camera
                 </span>
               )}
             </div>
-            {/* Remove button */}
             {avatarUrl && !isUploading && (
               <button
                 onClick={handleRemoveAvatar}
@@ -188,28 +185,28 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-10">
-          <div className="glass-card rounded-3xl p-4 text-center">
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="card p-4 text-center">
             <p className="text-2xl font-bold text-foreground">0</p>
             <p className="text-sm text-muted-foreground">Orders</p>
           </div>
-          <div className="glass-card rounded-3xl p-4 text-center">
+          <div className="card p-4 text-center">
             <p className="text-2xl font-bold text-foreground">0</p>
             <p className="text-sm text-muted-foreground">Wishlist</p>
           </div>
-          <div className="glass-card rounded-3xl p-4 text-center">
-            <p className="text-2xl font-bold brain-gradient-text">New</p>
+          <div className="card p-4 text-center">
+            <p className="text-2xl font-bold text-primary">New</p>
             <p className="text-sm text-muted-foreground">Member</p>
           </div>
         </div>
 
-        <div className="glass-card rounded-3xl overflow-hidden">
+        <div className="card overflow-hidden mb-6">
           {menuItems.map((item, index) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-4 p-4 hover:bg-white/5 transition-colors ${
-                index !== menuItems.length - 1 ? "border-b border-border/60" : ""
+              className={`w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors ${
+                index !== menuItems.length - 1 ? "border-b border-border" : ""
               }`}
             >
               <span className="material-symbols-outlined text-primary">{item.icon}</span>
@@ -219,9 +216,21 @@ const Profile = () => {
           ))}
         </div>
 
+        {/* Admin Link */}
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full card p-4 flex items-center gap-4 hover:bg-muted transition-colors mb-6"
+          >
+            <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
+            <span className="flex-1 text-left font-medium">Admin Dashboard</span>
+            <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
+          </button>
+        )}
+
         <button
           onClick={handleSignOut}
-          className="w-full mt-6 p-4 border border-destructive/70 text-destructive rounded-2xl hover:bg-destructive/10 transition-colors font-medium"
+          className="w-full p-4 border border-destructive text-destructive rounded-xl hover:bg-destructive/10 transition-colors font-medium"
         >
           Log Out
         </button>

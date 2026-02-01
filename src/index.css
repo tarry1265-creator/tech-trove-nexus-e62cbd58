@@ -7,46 +7,71 @@
 
 @layer base {
   :root {
-    --background: 240 20% 7%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
 
-    --card: 240 18% 10%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 98%;
+    --card-foreground: 240 10% 10%;
 
-    --popover: 240 18% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 266 88% 64%;
-    --primary-foreground: 240 20% 8%;
+    --primary: 270 70% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 190 95% 55%;
-    --secondary-foreground: 240 20% 8%;
+    --secondary: 270 30% 96%;
+    --secondary-foreground: 270 70% 45%;
 
-    --muted: 240 14% 18%;
-    --muted-foreground: 220 15% 72%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 5% 45%;
 
-    --accent: 240 14% 18%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 270 30% 96%;
+    --accent-foreground: 270 70% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 14% 22%;
-    --input: 240 14% 22%;
-    --ring: 266 88% 64%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 270 70% 55%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --surface: 240 16% 12%;
-    --surface-foreground: 210 40% 98%;
-
-    --brain-gradient-start: 266 88% 64%;
-    --brain-gradient-end: 190 95% 55%;
+    --surface: 0 0% 98%;
+    --surface-foreground: 240 10% 10%;
   }
 
   .dark {
-    --background: 240 20% 7%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 270 70% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 20% 15%;
+    --secondary-foreground: 270 50% 80%;
+
+    --muted: 240 10% 15%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 270 20% 15%;
+    --accent-foreground: 270 50% 80%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 270 70% 60%;
+
+    --surface: 240 10% 10%;
+    --surface-foreground: 0 0% 98%;
   }
 }
 
@@ -62,18 +87,12 @@
 
   * {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
-  }
-
-  html {
-    @apply dark;
   }
 
   h1,
@@ -107,37 +126,28 @@
     font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48;
   }
 
-  .brain-gradient-text {
-    @apply text-primary;
-    background: linear-gradient(to right, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-semibold rounded-lg px-6 py-3 transition-all hover:opacity-90 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50;
   }
 
-  .brain-gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground font-medium rounded-lg px-6 py-3 transition-all hover:bg-secondary/80 active:scale-[0.98];
   }
 
-  .glass-card {
-    @apply bg-card/60 border border-border/50 shadow-soft backdrop-blur-xl;
+  .btn-outline {
+    @apply border border-border bg-transparent text-foreground font-medium rounded-lg px-6 py-3 transition-all hover:bg-muted active:scale-[0.98];
   }
 
-  .btn-premium {
-    @apply text-primary-foreground font-semibold rounded-xl px-6 py-3 shadow-gold-md transition-all active:scale-[0.98] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0;
-    background: linear-gradient(135deg, hsl(var(--brain-gradient-start)), hsl(var(--brain-gradient-end)));
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg bg-background border border-input text-foreground font-medium placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all outline-none;
   }
 
-  .input-premium {
-    @apply w-full px-4 py-3 rounded-xl bg-surface/60 border border-input text-foreground font-medium placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/35 focus:border-primary/40 transition-all outline-none backdrop-blur-md;
+  .card {
+    @apply bg-card border border-border rounded-xl;
   }
 
   .page-container {
-    @apply min-h-screen text-foreground;
-    background:
-      radial-gradient(1200px 700px at 12% -10%, hsl(var(--primary) / 0.22), transparent 55%),
-      radial-gradient(900px 600px at 92% 0%, hsl(var(--secondary) / 0.16), transparent 55%),
-      hsl(var(--background));
+    @apply min-h-screen bg-background text-foreground;
   }
 
   .content-container {
@@ -152,22 +162,5 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-
-  /* Minimal float animation */
-  .animate-float {
-    animation: float 4s ease-in-out infinite;
-  }
-
-  @keyframes float {
-
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-5px);
-    }
   }
 }
