@@ -22,7 +22,7 @@ const Search = () => {
           <span className="text-sm font-medium">Back to Home</span>
         </button>
 
-        <div className="glass-card rounded-3xl p-6 mb-8">
+        <div className="card p-6 mb-8">
           <div className="flex items-start justify-between gap-6">
             <div>
               <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Search</h1>
@@ -30,7 +30,7 @@ const Search = () => {
             </div>
             <button
               onClick={() => navigate("/products")}
-              className="px-4 py-2 rounded-xl border border-border/60 bg-card/30 hover:bg-white/5 transition-colors text-sm font-medium text-foreground/80 hover:text-foreground"
+              className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-sm font-medium"
             >
               Browse all
             </button>
@@ -42,7 +42,7 @@ const Search = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search products, brands..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-surface/40 border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 text-lg backdrop-blur-md"
+              className="input-field pl-12 text-lg"
               autoFocus
             />
           </div>
@@ -52,31 +52,31 @@ const Search = () => {
           <>
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-              {isLoading ? "Searching..." : `${results.length} results for "${query}"`}
+                {isLoading ? "Searching..." : `${results.length} results for "${query}"`}
               </p>
             </div>
             {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-square rounded-3xl bg-surface/40 border border-border/60 animate-pulse" />
+                  <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
                 ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 {results.map((product) => (
-                  <ProductCard key={product.id} {...product} onAddToCart={() => {}} />
+                  <ProductCard key={product.id} {...product} />
                 ))}
               </div>
             )}
             {!isLoading && results.length === 0 && (
-              <div className="glass-card rounded-3xl p-10 text-center mt-8">
+              <div className="card p-10 text-center mt-8">
                 <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">search_off</span>
                 <p className="text-muted-foreground">No products found</p>
               </div>
             )}
           </>
         ) : (
-          <div className="glass-card rounded-3xl p-10 text-center">
+          <div className="card p-10 text-center">
             <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">search</span>
             <p className="text-muted-foreground">Start typing to search products</p>
           </div>

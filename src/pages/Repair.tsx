@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +84,6 @@ const Repair = () => {
         description: "Opening WhatsApp to send your repair request...",
       });
 
-      // Reset form
       setDeviceName("");
       setDeviceModel("");
       setDamageDescription("");
@@ -114,17 +112,13 @@ const Repair = () => {
           <span className="text-sm font-medium">Back to Home</span>
         </button>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl mx-auto"
-        >
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl text-primary">build</span>
             </div>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-2">
               Device Repair Request
             </h1>
             <p className="text-muted-foreground">
@@ -134,7 +128,7 @@ const Repair = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="glass-card p-6 rounded-2xl space-y-5">
+            <div className="card p-6 space-y-5">
               {/* Device Name */}
               <div className="space-y-2">
                 <Label htmlFor="deviceName" className="text-foreground font-medium">
@@ -145,7 +139,7 @@ const Repair = () => {
                   placeholder="e.g., iPhone 14 Pro, Samsung Galaxy S23, MacBook Pro"
                   value={deviceName}
                   onChange={(e) => setDeviceName(e.target.value)}
-                  className="bg-background/50 border-border/60"
+                  className="input-field"
                 />
               </div>
 
@@ -159,7 +153,7 @@ const Repair = () => {
                   placeholder="e.g., A2894, SM-S911B"
                   value={deviceModel}
                   onChange={(e) => setDeviceModel(e.target.value)}
-                  className="bg-background/50 border-border/60"
+                  className="input-field"
                 />
               </div>
 
@@ -173,7 +167,7 @@ const Repair = () => {
                   placeholder="Please describe what happened to your device, how it got damaged, and what issues you're experiencing..."
                   value={damageDescription}
                   onChange={(e) => setDamageDescription(e.target.value)}
-                  className="bg-background/50 border-border/60 min-h-[120px] resize-none"
+                  className="input-field min-h-[120px] resize-none"
                 />
               </div>
 
@@ -184,7 +178,7 @@ const Repair = () => {
                 </Label>
                 
                 {imagePreview ? (
-                  <div className="relative rounded-xl overflow-hidden border border-border/60">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
                     <img
                       src={imagePreview}
                       alt="Device damage"
@@ -193,15 +187,15 @@ const Repair = () => {
                     <button
                       type="button"
                       onClick={removeImage}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-foreground/60 flex items-center justify-center hover:bg-foreground/80 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-white text-sm">close</span>
+                      <span className="material-symbols-outlined text-background text-sm">close</span>
                     </button>
                   </div>
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-border/60 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary hover:bg-secondary transition-colors"
                   >
                     <span className="material-symbols-outlined text-4xl text-muted-foreground mb-2">
                       add_a_photo
@@ -229,7 +223,7 @@ const Repair = () => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full btn-premium py-6 text-lg"
+              className="w-full btn-primary py-6 text-lg"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
@@ -248,7 +242,7 @@ const Repair = () => {
               Our AI will analyze your request and send it directly to our repair team via WhatsApp
             </p>
           </form>
-        </motion.div>
+        </div>
       </div>
     </Layout>
   );

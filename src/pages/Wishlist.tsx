@@ -19,7 +19,7 @@ const Wishlist = () => {
           <span className="text-sm font-medium">Back to Home</span>
         </button>
 
-        <div className="glass-card rounded-3xl p-6 mb-8 flex items-start justify-between gap-6">
+        <div className="card p-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Wishlist</h1>
             <p className="text-muted-foreground mt-1">Saved for later.</p>
@@ -31,20 +31,17 @@ const Wishlist = () => {
         </div>
 
         {wishlist.length === 0 ? (
-          <div className="glass-card rounded-3xl p-10 text-center">
+          <div className="card p-10 text-center">
             <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">favorite_border</span>
             <p className="text-muted-foreground mb-6">Your wishlist is empty</p>
-            <button onClick={() => navigate("/products")} className="btn-premium px-8 py-3">
+            <button onClick={() => navigate("/products")} className="btn-primary">
               Explore Products
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
             {wishlist.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-              />
+              <ProductCard key={product.id} {...product} />
             ))}
           </div>
         )}

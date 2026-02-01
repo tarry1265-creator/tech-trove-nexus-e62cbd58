@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import Layout from "@/components/Layout";
-import { useProduct, formatPrice } from "@/hooks/useProducts";
+import { useProduct, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 
 const ProductDetails = () => {
@@ -13,7 +12,6 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Combine main image with additional images
   const allImages = useMemo(() => {
     if (!product) return [];
     const images = [product.image_url];
@@ -28,11 +26,11 @@ const ProductDetails = () => {
       <Layout>
         <div className="content-container py-6 lg:py-10">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            <div className="aspect-square rounded-3xl bg-surface animate-pulse" />
+            <div className="aspect-square rounded-xl bg-muted animate-pulse" />
             <div className="space-y-4">
-              <div className="h-6 w-24 bg-surface rounded animate-pulse" />
-              <div className="h-10 w-3/4 bg-surface rounded animate-pulse" />
-              <div className="h-20 w-full bg-surface rounded animate-pulse" />
+              <div className="h-6 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-10 w-3/4 bg-muted rounded animate-pulse" />
+              <div className="h-20 w-full bg-muted rounded animate-pulse" />
             </div>
           </div>
         </div>
@@ -46,7 +44,7 @@ const ProductDetails = () => {
         <div className="content-container py-20 text-center">
           <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">error</span>
           <p className="text-muted-foreground mb-6">Product not found</p>
-          <button onClick={() => navigate("/products")} className="btn-premium px-8 py-3">
+          <button onClick={() => navigate("/products")} className="btn-primary">
             Browse Products
           </button>
         </div>
@@ -55,6 +53,8 @@ const ProductDetails = () => {
   }
 
   const hasMultipleImages = allImages.length > 1;
+  const stockStatus = getStockStatus(product.stock_quantity);
+  const isOutOfStock = stockStatus.type === 'out';
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
@@ -62,6 +62,12 @@ const ProductDetails = () => {
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
+
+  const handleAddToCart = () => {
+    if (!isOutOfStock) {
+      addToCart(product, quantity);
+    }
   };
 
   return (
@@ -75,32 +81,25 @@ const ProductDetails = () => {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-surface">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentImageIndex}
-                  src={allImages[currentImageIndex]}
-                  alt={`${product.name} - Image ${currentImageIndex + 1}`}
-                  className="w-full h-full object-cover"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </AnimatePresence>
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border">
+              <img
+                src={allImages[currentImageIndex]}
+                alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover"
+              />
 
               {/* Navigation Arrows */}
               {hasMultipleImages && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted transition-colors"
                   >
                     <span className="material-symbols-outlined">chevron_left</span>
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted transition-colors"
                   >
                     <span className="material-symbols-outlined">chevron_right</span>
                   </button>
@@ -109,7 +108,7 @@ const ProductDetails = () => {
 
               {/* Image Counter */}
               {hasMultipleImages && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/80 backdrop-blur-sm text-sm font-medium">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background border border-border text-sm font-medium">
                   {currentImageIndex + 1} / {allImages.length}
                 </div>
               )}
@@ -122,8 +121,8 @@ const ProductDetails = () => {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${currentImageIndex === index
-                      ? 'border-primary ring-2 ring-primary/20'
+                    className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index
+                      ? 'border-primary'
                       : 'border-border hover:border-primary/50'
                       }`}
                   >
@@ -141,9 +140,9 @@ const ProductDetails = () => {
           {/* Details */}
           <div className="flex flex-col">
             <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-2">
-              {product.brand || "Roothub"}
+              {product.brand || "Brainhub"}
             </span>
-            <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-4">{product.name}</h1>
+            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-4">{product.name}</h1>
 
             {product.rating && (
               <div className="flex items-center gap-3 mb-6">
@@ -155,40 +154,62 @@ const ProductDetails = () => {
               </div>
             )}
 
-            <p className="text-muted-foreground mb-8">{product.description}</p>
+            <p className="text-muted-foreground mb-6">{product.description}</p>
 
             {/* Stock Status */}
             <div className="mb-6">
-              {product.stock_quantity && product.stock_quantity > 0 ? (
-                <span className="inline-flex items-center gap-2 text-green-500">
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  In Stock ({product.stock_quantity} available)
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2 text-destructive">
+              {isOutOfStock ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
                   <span className="material-symbols-outlined text-[18px]">cancel</span>
                   Out of Stock
+                </span>
+              ) : stockStatus.type === 'low' ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-100 text-orange-700 text-sm font-medium">
+                  <span className="material-symbols-outlined text-[18px]">warning</span>
+                  {stockStatus.message}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-green-100 text-green-700 text-sm font-medium">
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  In Stock
                 </span>
               )}
             </div>
 
-            {/* Price & Add to Cart */}
+            {/* Price */}
             <div className="flex items-center gap-4 mb-8">
               <span className="text-3xl font-bold">{formatPrice(product.price)}</span>
             </div>
 
             <div className="flex gap-4">
               <div className="flex items-center border border-border rounded-lg">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 hover:bg-accent">-</button>
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                  className="px-4 py-3 hover:bg-muted rounded-l-lg transition-colors"
+                  disabled={isOutOfStock}
+                >
+                  -
+                </button>
                 <span className="px-4 py-3 font-medium">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 hover:bg-accent">+</button>
+                <button 
+                  onClick={() => setQuantity(quantity + 1)} 
+                  className="px-4 py-3 hover:bg-muted rounded-r-lg transition-colors"
+                  disabled={isOutOfStock}
+                >
+                  +
+                </button>
               </div>
               <button
-                onClick={() => addToCart(product, quantity)}
-                className="flex-1 btn-premium py-4 flex items-center justify-center gap-2"
+                onClick={handleAddToCart}
+                disabled={isOutOfStock}
+                className={`flex-1 py-4 flex items-center justify-center gap-2 rounded-lg font-semibold transition-all ${
+                  isOutOfStock 
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                    : 'btn-primary'
+                }`}
               >
                 <span className="material-symbols-outlined">shopping_bag</span>
-                Add to Cart
+                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
               </button>
             </div>
 
@@ -198,7 +219,7 @@ const ProductDetails = () => {
                 <h3 className="font-display text-lg font-semibold mb-4">Category</h3>
                 <button
                   onClick={() => navigate(`/products?category=${product.category?.slug}`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-surface rounded-lg hover:bg-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
                 >
                   <span className="material-symbols-outlined text-primary">{product.category.icon || "category"}</span>
                   <span>{product.category.name}</span>
