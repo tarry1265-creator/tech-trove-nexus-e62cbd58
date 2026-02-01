@@ -48,6 +48,28 @@ const Repair = () => {
     }
   };
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `repair-${timestamp}-${randomStr}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('repair-images')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw new Error("Failed to upload image");
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('repair-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -63,12 +85,19 @@ const Repair = () => {
     setIsSubmitting(true);
 
     try {
+      let imageUrl: string | null = null;
+
+      // Upload image to Supabase Storage if provided
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
       const { data, error } = await supabase.functions.invoke("process-repair-request", {
         body: {
           deviceName: deviceName.trim(),
           deviceModel: deviceModel.trim(),
           damageDescription: damageDescription.trim(),
-          hasImage: !!imageFile,
+          imageUrl,
         },
       });
 
