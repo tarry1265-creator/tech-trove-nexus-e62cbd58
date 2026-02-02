@@ -37,7 +37,7 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
               {item.icon}
             </span>
             <span className="text-[10px] font-medium">{item.label}</span>
-            {item.badge && item.badge > 0 && (
+            {item.badge !== undefined && item.badge > 0 && (
               <span className="absolute top-1 right-2 min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-1">
                 {item.badge}
               </span>
