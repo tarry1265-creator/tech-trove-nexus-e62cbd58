@@ -1,19 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Product, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
-import { useWishlist } from "@/context/WishlistContext";
 
 interface ProductCardProps extends Product {
   onAddToCart?: () => void;
-  onFavorite?: () => void;
 }
 
 const ProductCard = (product: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { toggleWishlist, isInWishlist } = useWishlist();
-
-  const isFavorited = isInWishlist(product.id);
   const stockStatus = getStockStatus(product.stock_quantity);
   const isOutOfStock = stockStatus.type === 'out';
 
@@ -25,11 +20,6 @@ const ProductCard = (product: ProductCardProps) => {
     }
   };
 
-  const handleToggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleWishlist(product);
-    product.onFavorite?.();
-  };
 
   return (
     <div
@@ -57,18 +47,6 @@ const ProductCard = (product: ProductCardProps) => {
           )}
         </div>
 
-        {/* Favorite Button */}
-        <button
-          onClick={handleToggleFavorite}
-          className={`absolute top-3 right-3 z-10 p-2 rounded-full border transition-all ${isFavorited
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background/80 text-muted-foreground border-border hover:text-primary hover:border-primary"
-            }`}
-        >
-          <span className={`material-symbols-outlined text-[18px] ${isFavorited ? "filled" : ""}`}>
-            favorite
-          </span>
-        </button>
 
         {/* Product Image */}
         <div

@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
-import { WishlistProvider } from "@/context/WishlistContext";
 import Splash from "./pages/Splash";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -13,7 +12,6 @@ import NotFound from "./pages/NotFound";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
-import Wishlist from "./pages/Wishlist";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
@@ -28,7 +26,6 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <CartProvider>
-          <WishlistProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -41,7 +38,7 @@ const App = () => (
                 <Route path="/search" element={<Search />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
-                <Route path="/wishlist" element={<Wishlist />} />
+                
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/repair" element={<Repair />} />
@@ -49,7 +46,6 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </TooltipProvider>

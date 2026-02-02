@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Layout from "@/components/Layout";
 import { useProducts, useCategories, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
 import { toast } from "sonner";
 import ScanProductModal from "@/components/admin/ScanProductModal";
@@ -17,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Admin = () => {
-  const navigate = useNavigate();
   const { data: products = [], isLoading: productsLoading, refetch } = useProducts();
   const { data: categories = [], refetch: refetchCategories } = useCategories();
   const updateProduct = useUpdateProduct();
@@ -83,19 +80,11 @@ const Admin = () => {
   };
 
   return (
-    <Layout>
+    <div className="min-h-screen bg-background">
       <div className="content-container py-4 lg:py-8">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <button
-            onClick={() => navigate("/home")}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-            <span className="text-sm font-medium hidden sm:inline">Back</span>
-          </button>
-          
-          <h1 className="font-display text-xl lg:text-2xl font-bold">Admin</h1>
+          <h1 className="font-display text-xl lg:text-2xl font-bold">Admin Dashboard</h1>
           
           <button
             onClick={() => setShowScanModal(true)}
@@ -171,7 +160,7 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Layout>
+    </div>
   );
 };
 

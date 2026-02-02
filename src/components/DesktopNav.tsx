@@ -112,13 +112,6 @@ const DesktopNav = () => {
               <span className="material-symbols-outlined text-[22px]">search</span>
             </button>
 
-            {/* Wishlist */}
-            <button
-              onClick={() => navigate("/wishlist")}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <span className="material-symbols-outlined text-[22px]">favorite_border</span>
-            </button>
 
             {/* Cart */}
             <button
