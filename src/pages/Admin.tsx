@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { useProducts, useUpdateProduct, useDeleteProduct, formatPrice } from "@/hooks/useProducts";
+import { useProducts, useCategories, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
 import { toast } from "sonner";
 import ScanProductModal from "@/components/admin/ScanProductModal";
 import ProductTable from "@/components/admin/ProductTable";
@@ -19,21 +19,15 @@ import {
 const Admin = () => {
   const navigate = useNavigate();
   const { data: products = [], isLoading: productsLoading, refetch } = useProducts();
+  const { data: categories = [], refetch: refetchCategories } = useCategories();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   
-  const [searchQuery, setSearchQuery] = useState("");
   const [showScanModal, setShowScanModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
-  // Filter products by search
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Sort by stock (low stock first)
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
+  const sortedProducts = [...products].sort((a, b) => {
     const stockA = a.stock_quantity ?? 100;
     const stockB = b.stock_quantity ?? 100;
     return stockA - stockB;
@@ -123,22 +117,8 @@ const Admin = () => {
             <div className="text-[10px] lg:text-xs text-muted-foreground">Out of Stock</div>
           </div>
           <div className="card p-3 lg:p-4 text-center">
-            <div className="text-xl lg:text-2xl font-bold text-orange-500">{stats.lowStock}</div>
+            <div className="text-xl lg:text-2xl font-bold text-amber-600 dark:text-amber-500">{stats.lowStock}</div>
             <div className="text-[10px] lg:text-xs text-muted-foreground">Low Stock</div>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="mb-4">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground text-xl">search</span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
-              className="input-field pl-10 w-full"
-            />
           </div>
         </div>
 
@@ -155,6 +135,7 @@ const Admin = () => {
         ) : (
           <ProductTable
             products={sortedProducts}
+            categories={categories}
             onEdit={() => {}}
             onSave={handleSave}
             onDelete={(id, name) => setDeleteConfirm({ id, name })}
@@ -167,7 +148,7 @@ const Admin = () => {
       <ScanProductModal
         open={showScanModal}
         onClose={() => setShowScanModal(false)}
-        onProductAdded={() => refetch()}
+        onProductAdded={() => { refetch(); refetchCategories(); }}
       />
 
       {/* Delete Confirmation Dialog */}
