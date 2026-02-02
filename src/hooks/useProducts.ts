@@ -273,21 +273,50 @@ export const useUpdateProduct = () => {
   });
 };
 
-// Delete product
+// Delete product and cleanup empty categories
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async (productId: string) => {
-      const { error } = await supabase
+      // First get the product's category_id
+      const { data: product, error: fetchError } = await supabase
+        .from("products")
+        .select("category_id")
+        .eq("id", productId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const categoryId = product?.category_id;
+
+      // Delete the product
+      const { error: deleteError } = await supabase
         .from("products")
         .delete()
         .eq("id", productId);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // If product had a category, check if it's now empty
+      if (categoryId) {
+        const { count, error: countError } = await supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("category_id", categoryId);
+
+        if (!countError && count === 0) {
+          // Category is empty, delete it
+          await supabase
+            .from("categories")
+            .delete()
+            .eq("id", categoryId);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 };
