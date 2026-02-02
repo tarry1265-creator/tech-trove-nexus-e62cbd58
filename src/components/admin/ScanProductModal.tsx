@@ -1,8 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCategories } from "@/hooks/useProducts";
 
 interface ScanProductModalProps {
   open: boolean;
@@ -24,15 +27,59 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
   const [showCamera, setShowCamera] = useState(false);
   const [productPreview, setProductPreview] = useState<ProductData | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Editable fields
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editBrand, setEditBrand] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [useNewCategory, setUseNewCategory] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  const { data: categories } = useCategories();
+
+  // Update editable fields when product preview changes
+  useEffect(() => {
+    if (productPreview) {
+      setEditName(productPreview.name);
+      setEditDescription(productPreview.description);
+      setEditPrice(String(productPreview.price));
+      setEditBrand(productPreview.brand || "");
+      setEditCategory(productPreview.category);
+      setUseNewCategory(productPreview.isNewCategory);
+      
+      // Try to find matching category
+      if (categories && !productPreview.isNewCategory) {
+        const found = categories.find(c => 
+          c.name.toLowerCase() === productPreview.category.toLowerCase()
+        );
+        if (found) {
+          setSelectedCategoryId(found.id);
+          setUseNewCategory(false);
+        } else {
+          setUseNewCategory(true);
+        }
+      }
+    }
+  }, [productPreview, categories]);
 
   const resetState = () => {
     setIsScanning(false);
     setShowCamera(false);
     setProductPreview(null);
     setImagePreview(null);
+    setEditName("");
+    setEditDescription("");
+    setEditPrice("");
+    setEditBrand("");
+    setEditCategory("");
+    setUseNewCategory(false);
+    setSelectedCategoryId("");
     stopCamera();
   };
 
@@ -124,38 +171,44 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
   };
 
   const addProduct = async () => {
-    if (!productPreview || !imagePreview) return;
+    if (!imagePreview || !editName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
 
     setIsScanning(true);
     try {
-      // First, handle the category
       let categoryId: string | null = null;
 
-      // Check if category exists
-      const { data: existingCategory } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', productPreview.category)
-        .single();
-
-      if (existingCategory) {
-        categoryId = existingCategory.id;
-      } else {
-        // Create new category
-        const { data: newCategory, error: categoryError } = await supabase
+      if (useNewCategory && editCategory.trim()) {
+        // Check if category already exists
+        const { data: existingCategory } = await supabase
           .from('categories')
-          .insert({
-            name: productPreview.category,
-            slug: generateSlug(productPreview.category),
-            description: `${productPreview.category} products`,
-            icon: 'category'
-          })
           .select('id')
-          .single();
+          .eq('name', editCategory.trim())
+          .maybeSingle();
 
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
-        toast.success(`Created new category: ${productPreview.category}`);
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          // Create new category
+          const { data: newCategory, error: categoryError } = await supabase
+            .from('categories')
+            .insert({
+              name: editCategory.trim(),
+              slug: generateSlug(editCategory.trim()),
+              description: `${editCategory.trim()} products`,
+              icon: 'category'
+            })
+            .select('id')
+            .single();
+
+          if (categoryError) throw categoryError;
+          categoryId = newCategory.id;
+          toast.success(`Created new category: ${editCategory.trim()}`);
+        }
+      } else if (selectedCategoryId) {
+        categoryId = selectedCategoryId;
       }
 
       // Upload image to storage
@@ -183,12 +236,12 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       const { error: productError } = await supabase
         .from('products')
         .insert({
-          name: productPreview.name,
-          slug: generateSlug(productPreview.name),
-          description: productPreview.description,
-          price: productPreview.price,
+          name: editName.trim(),
+          slug: generateSlug(editName.trim()),
+          description: editDescription.trim() || null,
+          price: Number(editPrice) || 0,
           category_id: categoryId,
-          brand: productPreview.brand,
+          brand: editBrand.trim() || null,
           image_url: publicUrl.publicUrl,
           stock_quantity: 10,
           is_new_arrival: true,
@@ -291,46 +344,108 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
               />
             )}
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Product Name</label>
-                <p className="font-medium text-foreground">{productPreview.name}</p>
+                <Label htmlFor="productName">Product Name</Label>
+                <Input
+                  id="productName"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter product name"
+                />
               </div>
               
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Description</label>
-                <p className="text-sm text-foreground">{productPreview.description}</p>
+                <Label htmlFor="productDescription">Description</Label>
+                <textarea
+                  id="productDescription"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Enter product description"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-none h-20 focus:outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
               
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="text-xs font-medium text-muted-foreground">Price</label>
-                  <p className="font-bold text-primary">₦{productPreview.price.toLocaleString()}</p>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs font-medium text-muted-foreground">Category</label>
-                  <p className="text-sm text-foreground">
-                    {productPreview.category}
-                    {productPreview.isNewCategory && (
-                      <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">New</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              
-              {productPreview.brand && (
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Brand</label>
-                  <p className="text-sm text-foreground">{productPreview.brand}</p>
+                  <Label htmlFor="productPrice">Price (₦)</Label>
+                  <Input
+                    id="productPrice"
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
                 </div>
-              )}
+                <div>
+                  <Label htmlFor="productBrand">Brand</Label>
+                  <Input
+                    id="productBrand"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                    placeholder="Brand name"
+                  />
+                </div>
+              </div>
+
+              {/* Category Selection */}
+              <div className="space-y-3">
+                <Label>Category</Label>
+                
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUseNewCategory(false)}
+                    className={`flex-1 py-2 px-3 text-sm rounded-lg border transition-colors ${
+                      !useNewCategory 
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    Existing Category
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseNewCategory(true)}
+                    className={`flex-1 py-2 px-3 text-sm rounded-lg border transition-colors ${
+                      useNewCategory 
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    New Category
+                  </button>
+                </div>
+
+                {useNewCategory ? (
+                  <Input
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    placeholder="Enter new category name"
+                  />
+                ) : (
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select a category</option>
+                    {categories?.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">
               <Button variant="outline" className="flex-1" onClick={resetState}>
                 Scan Again
               </Button>
-              <Button className="flex-1" onClick={addProduct}>
+              <Button className="flex-1" onClick={addProduct} disabled={!editName.trim()}>
                 <span className="material-symbols-outlined mr-2 text-lg">add</span>
                 Add Product
               </Button>
