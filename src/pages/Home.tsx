@@ -42,16 +42,17 @@ const Home = () => {
       <div className="content-container py-6 lg:py-10">
         {/* Hero Section */}
         <section className="relative overflow-hidden rounded-2xl bg-primary mb-10">
-          <div className="grid lg:grid-cols-2 gap-8 p-8 lg:p-12">
+          <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-10">
+            {/* Left: Content */}
             <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 w-fit px-3 py-1 mb-4 bg-primary-foreground/10 text-primary-foreground text-xs font-semibold uppercase tracking-wider rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+              <span className="inline-flex items-center gap-2 w-fit px-3 py-1.5 mb-4 bg-primary-foreground/15 text-primary-foreground text-xs font-semibold uppercase tracking-wider rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
                 New Collection
               </span>
-              <h1 className="font-display text-4xl lg:text-5xl font-bold text-primary-foreground leading-tight mb-4">
-                Premium Tech & Gadgets
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-primary-foreground leading-tight mb-4">
+                Premium Tech <br className="hidden sm:block" />& Gadgets
               </h1>
-              <p className="text-primary-foreground/80 text-lg mb-6 max-w-lg">
+              <p className="text-primary-foreground/80 text-base lg:text-lg mb-6 max-w-md">
                 Quality gadgets, trusted repairs, and unbeatable prices. Your one-stop tech destination.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -69,17 +70,19 @@ const Home = () => {
                 </button>
               </div>
             </div>
+
+            {/* Right: Featured Image */}
             <div className="hidden lg:flex items-center justify-center">
               {products[0] ? (
-                <div className="relative rounded-xl overflow-hidden border border-primary-foreground/20 bg-primary-foreground/10 p-4">
+                <div className="relative rounded-xl overflow-hidden bg-primary-foreground/10 p-4">
                   <img
                     src={products[0].image_url}
                     alt="Featured Product"
-                    className="w-full max-w-sm h-auto object-cover rounded-lg"
+                    className="w-full max-w-xs h-auto object-cover rounded-lg"
                   />
                 </div>
               ) : (
-                <div className="w-full max-w-sm h-64 rounded-xl bg-primary-foreground/10 animate-pulse" />
+                <div className="w-full max-w-xs h-64 rounded-xl bg-primary-foreground/10 animate-pulse" />
               )}
             </div>
           </div>
@@ -106,7 +109,7 @@ const Home = () => {
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.slug)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm font-medium ${activeCategory === category.slug
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all whitespace-nowrap text-sm font-medium ${activeCategory === category.slug
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
@@ -131,7 +134,7 @@ const Home = () => {
         {/* Featured/Filtered Products */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-xl lg:text-2xl font-bold text-foreground">
+            <h2 className="section-title">
               {activeCategory === "all" ? "Featured Products" : allCategories.find(c => c.slug === activeCategory)?.name || "Products"}
             </h2>
             <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
@@ -161,7 +164,7 @@ const Home = () => {
         {/* New Arrivals */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-xl lg:text-2xl font-bold text-foreground">New Arrivals</h2>
+            <h2 className="section-title">New Arrivals</h2>
             <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
               View All
             </button>

@@ -18,6 +18,11 @@ import Checkout from "./pages/Checkout";
 import Repair from "./pages/Repair";
 import Orders from "./pages/Orders";
 import Admin from "./pages/Admin";
+import AdminOrders from "./pages/AdminOrders";
+import AdminUsers from "./pages/AdminUsers";
+import AdminProducts from "./pages/AdminProducts";
+import AdminPromotions from "./pages/AdminPromotions";
+import AdminAI from "./pages/AdminAI";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +47,15 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/repair" element={<Repair />} />
+                
+                {/* Admin Routes */}
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/products" element={<AdminProducts />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/promotions" element={<AdminPromotions />} />
+                <Route path="/admin/ai" element={<AdminAI />} />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
