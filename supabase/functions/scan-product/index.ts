@@ -111,55 +111,78 @@ Respond ONLY with valid JSON, no additional text. Example:
       throw new Error("Failed to parse product information");
     }
 
-    // Step 2: Generate an official-looking product image using the product name
+    // Step 2: Search for official product image URL using web search
     let officialImageUrl: string | null = null;
     
     if (productData.name) {
-      console.log("Step 2: Generating official product image for:", productData.name);
+      console.log("Step 2: Searching for official product image for:", productData.name);
       
       try {
-        const imageGenResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const searchQuery = `${productData.name}${productData.brand ? ` ${productData.brand}` : ''} official product image`;
+        
+        const imageSearchResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
+            model: "google/gemini-2.5-flash",
             messages: [
               {
                 role: "user",
-                content: `Generate a professional product photography image of: ${productData.name}${productData.brand ? ` by ${productData.brand}` : ''}. 
-                
-The image should be:
-- Clean white or light gray background
-- Professional studio lighting
-- Product centered and clearly visible
-- High quality commercial product photo style
-- No text overlays or watermarks
-- Similar to official manufacturer product images`
+                content: `Search the web and find the official product image URL for: "${searchQuery}"
+
+I need you to find a direct URL to a high-quality official product image (JPG, PNG, or WEBP format) from:
+1. The manufacturer's official website
+2. Major retailers like Amazon, Best Buy, Walmart, etc.
+3. Official product pages
+
+Requirements for the image URL:
+- Must be a direct link to an image file (ends with .jpg, .jpeg, .png, .webp, or contains image parameters)
+- Must be from a reputable source
+- Should be a clean product photo (white/transparent background preferred)
+- High resolution preferred
+
+Respond with ONLY the direct image URL, nothing else. If you cannot find a suitable official image URL, respond with exactly: NO_IMAGE_FOUND`
               }
             ],
-            modalities: ["image", "text"]
+            tools: [{
+              type: "function",
+              function: {
+                name: "web_search",
+                description: "Search the web for information"
+              }
+            }]
           }),
         });
 
-        if (imageGenResponse.ok) {
-          const imageGenData = await imageGenResponse.json();
-          const generatedImage = imageGenData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageSearchResponse.ok) {
+          const searchData = await imageSearchResponse.json();
+          const searchResult = searchData.choices?.[0]?.message?.content?.trim();
           
-          if (generatedImage) {
-            officialImageUrl = generatedImage;
-            console.log("Successfully generated official product image");
+          console.log("Image search result:", searchResult);
+          
+          if (searchResult && searchResult !== "NO_IMAGE_FOUND" && searchResult.startsWith("http")) {
+            // Validate it looks like an image URL
+            const lowerUrl = searchResult.toLowerCase();
+            if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || 
+                lowerUrl.includes('.png') || lowerUrl.includes('.webp') ||
+                lowerUrl.includes('image') || lowerUrl.includes('/img')) {
+              officialImageUrl = searchResult;
+              console.log("Found official product image URL:", officialImageUrl);
+            } else {
+              console.log("URL doesn't appear to be an image, skipping");
+            }
           } else {
-            console.log("No image in generation response, using uploaded image as fallback");
+            console.log("No official image URL found, will use uploaded image as fallback");
           }
         } else {
-          const errorText = await imageGenResponse.text();
-          console.error("Image generation failed:", errorText);
+          const errorText = await imageSearchResponse.text();
+          console.error("Image search failed:", errorText);
         }
-      } catch (imageGenError) {
-        console.error("Error generating product image:", imageGenError);
+      } catch (searchError) {
+        console.error("Error searching for product image:", searchError);
       }
     }
 
