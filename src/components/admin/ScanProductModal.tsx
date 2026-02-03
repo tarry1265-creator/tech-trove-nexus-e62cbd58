@@ -20,6 +20,7 @@ interface ProductData {
   category: string;
   brand: string | null;
   isNewCategory: boolean;
+  officialImageUrl: string | null;
 }
 
 const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalProps) => {
@@ -211,26 +212,38 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         categoryId = selectedCategoryId;
       }
 
-      // Upload image to storage
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-      const base64Data = imagePreview.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      // Determine which image to use - prefer official image
+      let finalImageUrl: string;
+      
+      if (productPreview?.officialImageUrl) {
+        // Use official image URL directly
+        finalImageUrl = productPreview.officialImageUrl;
+      } else if (imagePreview) {
+        // Upload the captured/selected image to storage
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+        const base64Data = imagePreview.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+        const { error: uploadError } = await supabase.storage
+          .from('repair-images')
+          .upload(`products/${fileName}`, blob);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrl } = supabase.storage
+          .from('repair-images')
+          .getPublicUrl(`products/${fileName}`);
+        
+        finalImageUrl = publicUrl.publicUrl;
+      } else {
+        throw new Error("No image available");
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-      const { error: uploadError } = await supabase.storage
-        .from('repair-images')
-        .upload(`products/${fileName}`, blob);
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrl } = supabase.storage
-        .from('repair-images')
-        .getPublicUrl(`products/${fileName}`);
 
       // Insert product
       const { error: productError } = await supabase
@@ -242,7 +255,7 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
           price: Number(editPrice) || 0,
           category_id: categoryId,
           brand: editBrand.trim() || null,
-          image_url: publicUrl.publicUrl,
+          image_url: finalImageUrl,
           stock_quantity: 10,
           is_new_arrival: true,
           currency: 'NGN'
@@ -336,12 +349,25 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
 
         {productPreview && !isScanning && (
           <div className="flex flex-col gap-4 py-4">
-            {imagePreview && (
-              <img 
-                src={imagePreview} 
-                alt="Product preview" 
-                className="w-full h-48 object-contain rounded-lg bg-muted"
-              />
+            {(productPreview.officialImageUrl || imagePreview) && (
+              <div className="space-y-2">
+                <img 
+                  src={productPreview.officialImageUrl || imagePreview!} 
+                  alt="Product preview" 
+                  className="w-full h-48 object-contain rounded-lg bg-muted"
+                  onError={(e) => {
+                    // Fallback to uploaded image if official URL fails
+                    if (imagePreview && e.currentTarget.src !== imagePreview) {
+                      e.currentTarget.src = imagePreview;
+                    }
+                  }}
+                />
+                {productPreview.officialImageUrl && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    ✓ Official product image found
+                  </p>
+                )}
+              </div>
             )}
             
             <div className="space-y-4">
