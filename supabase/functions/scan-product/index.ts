@@ -40,7 +40,7 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `You are a product identification expert. Analyze this product image and provide the following information in JSON format:
+                text: `You are a product identification expert with web search capabilities. Analyze this product image and provide the following information in JSON format:
 
 1. name: The official product name (be specific, include brand if visible)
 2. description: A detailed product description (2-3 sentences about features and benefits)
@@ -48,6 +48,7 @@ serve(async (req) => {
 4. category: The product category. Must be one of these existing categories if it matches: "Headphones", "Speakers", "Gaming", "Fans", "Flash Drives", "Routers", "Airpods/Earbuds", "Action Figures". If the product doesn't fit any existing category, suggest a new category name.
 5. brand: The brand name if visible, otherwise null
 6. isNewCategory: true if you're suggesting a new category, false if using an existing one
+7. officialImageUrl: Search the web and find an official product image URL for this exact product from a reputable source (manufacturer website, Amazon, official retailer). The URL must be a direct link to an image file (ending in .jpg, .png, .webp, etc.) or a valid product image CDN URL. Return null if you cannot find a reliable official image.
 
 Respond ONLY with valid JSON, no additional text. Example:
 {
@@ -56,7 +57,8 @@ Respond ONLY with valid JSON, no additional text. Example:
   "price": 25000,
   "category": "Headphones",
   "brand": "JBL",
-  "isNewCategory": false
+  "isNewCategory": false,
+  "officialImageUrl": "https://www.jbl.com/images/products/tune500bt-black.jpg"
 }`
               },
               {
