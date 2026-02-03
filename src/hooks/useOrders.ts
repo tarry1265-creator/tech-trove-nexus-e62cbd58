@@ -24,6 +24,25 @@ export interface Order {
   items?: OrderItem[];
 }
 
+// Fetch all orders (for admin)
+export const useOrders = () => {
+  return useQuery({
+    queryKey: ["all-orders"],
+    queryFn: async () => {
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (ordersError) throw ordersError;
+      
+      return (orders || []) as Order[];
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+};
+
+// Fetch orders for current user
 export const useUserOrders = () => {
   const { user } = useAuth();
   

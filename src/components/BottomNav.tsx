@@ -20,17 +20,17 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
   return (
     <nav
       ref={ref}
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border"
     >
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
         {navItems.map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
-            className={`relative flex flex-col items-center gap-0.5 p-2 rounded-lg transition-colors min-w-[60px] ${
+            className={`relative flex flex-col items-center gap-0.5 p-2 rounded-lg transition-colors min-w-[56px] ${
               isActive(item.path) 
                 ? "text-primary" 
-                : "text-muted-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className={`material-symbols-outlined text-[22px] ${isActive(item.path) ? "filled" : ""}`}>
@@ -38,8 +38,8 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
             </span>
             <span className="text-[10px] font-medium">{item.label}</span>
             {item.badge !== undefined && item.badge > 0 && (
-              <span className="absolute top-1 right-2 min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-1">
-                {item.badge}
+              <span className="absolute top-0.5 right-1.5 min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-1">
+                {item.badge > 99 ? '99+' : item.badge}
               </span>
             )}
           </button>

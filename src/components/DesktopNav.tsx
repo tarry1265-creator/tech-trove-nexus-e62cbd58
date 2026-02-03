@@ -22,24 +22,23 @@ const DesktopNav = () => {
     { label: "Home", path: "/home" },
     { label: "Shop", path: "/products" },
     { label: "Repair", path: "/repair" },
-    { label: "New Arrivals", path: "/products?filter=new" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="hidden lg:block sticky top-0 z-50 bg-background border-b border-border">
+    <header className="hidden lg:block sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="content-container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
             onClick={() => navigate("/home")}
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-2.5"
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
               <span className="material-symbols-outlined text-primary-foreground text-xl">memory</span>
             </div>
-            <span className="font-display text-xl font-bold tracking-tight text-foreground">
+            <span className="text-xl font-bold tracking-tight text-foreground">
               BRAINHUB
             </span>
           </button>
@@ -77,9 +76,9 @@ const DesktopNav = () => {
 
               {showBrands && (
                 <div className="absolute top-full left-0 pt-2 w-48">
-                  <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden p-2">
+                  <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden">
                     {brands.length > 0 ? (
-                      <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+                      <div className="flex flex-col max-h-64 overflow-y-auto py-1">
                         {brands.map(brand => (
                           <button
                             key={brand}
@@ -87,14 +86,14 @@ const DesktopNav = () => {
                               navigate(`/products?brand=${encodeURIComponent(brand)}`);
                               setShowBrands(false);
                             }}
-                            className="text-left px-3 py-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors"
+                            className="text-left px-4 py-2 hover:bg-muted text-sm text-foreground transition-colors"
                           >
                             {brand}
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <div className="p-3 text-xs text-muted-foreground">No brands found</div>
+                      <div className="p-3 text-sm text-muted-foreground">No brands found</div>
                     )}
                   </div>
                 </div>
@@ -103,25 +102,24 @@ const DesktopNav = () => {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Search */}
             <button
               onClick={() => navigate("/search")}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              className="p-2.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">search</span>
             </button>
 
-
             {/* Cart */}
             <button
               onClick={() => navigate("/cart")}
-              className="relative p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              className="relative p-2.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
               <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                  {cartCount}
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
             </button>
@@ -129,7 +127,7 @@ const DesktopNav = () => {
             {/* Profile */}
             <button
               onClick={() => navigate("/profile")}
-              className="w-9 h-9 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors"
+              className="ml-1 w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
             >
               {profile?.avatar_url ? (
                 <img

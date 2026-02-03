@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -124,7 +123,6 @@ const Login = () => {
     }
   };
 
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "signin") {
@@ -136,47 +134,49 @@ const Login = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
       {/* Left Panel - Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-20">
-        <motion.div
-          className="max-w-md mx-auto w-full"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-24">
+        <div className="max-w-md mx-auto w-full">
           {/* Logo */}
-          <button onClick={() => navigate("/")} className="flex items-center gap-2 mb-10">
-            <span className="material-symbols-outlined brain-gradient-text text-3xl">bolt</span>
-            <span className="font-display text-2xl font-bold brain-gradient-text">BRAINHUB</span>
+          <button onClick={() => navigate("/")} className="flex items-center gap-2.5 mb-10">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary-foreground text-xl">memory</span>
+            </div>
+            <span className="text-2xl font-bold text-foreground">BRAINHUB</span>
           </button>
 
-          <h1 className="font-display text-3xl font-bold mb-2">
-            {activeTab === "signin" ? "Welcome Back" : "Create Account"}
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+            {activeTab === "signin" ? "Welcome back" : "Create account"}
           </h1>
           <p className="text-muted-foreground mb-8">
             {activeTab === "signin" ? "Sign in to continue shopping" : "Join us for exclusive offers"}
           </p>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-8">
+          <div className="flex gap-2 p-1 bg-muted rounded-lg mb-8">
             <button
               onClick={() => setActiveTab("signin")}
-              className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === "signin" ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground"
-                }`}
+              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "signin" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               Sign In
             </button>
             <button
               onClick={() => setActiveTab("signup")}
-              className={`flex-1 py-3 rounded-lg font-medium transition-all ${activeTab === "signup" ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground"
-                }`}
+              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "signup" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               Sign Up
             </button>
@@ -185,44 +185,53 @@ const Login = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {activeTab === "signup" && (
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="input-premium"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter your full name"
+                  className="input-field"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
             )}
-            <input
-              type="email"
-              placeholder="Email Address"
-              className="input-premium"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <div className="relative">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Email Address</label>
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                className="input-premium pr-12"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="email"
+                placeholder="you@example.com"
+                className="input-field"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? "visibility" : "visibility_off"}
-                </span>
-              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="input-field pr-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {showPassword ? "visibility" : "visibility_off"}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {activeTab === "signin" && (
               <div className="flex justify-end">
                 <button type="button" className="text-sm text-primary hover:underline">
-                  Forgot Password?
+                  Forgot password?
                 </button>
               </div>
             )}
@@ -230,7 +239,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full btn-premium py-4 mt-4 disabled:opacity-50"
+              className="w-full btn-primary py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting
                 ? "Please wait..."
@@ -240,27 +249,26 @@ const Login = () => {
             </button>
           </form>
 
-
           {activeTab === "signup" && (
             <p className="text-xs text-muted-foreground text-center mt-6">
               By creating an account, you agree to our Terms of Service and Privacy Policy.
             </p>
           )}
-        </motion.div>
+        </div>
       </div>
 
-      {/* Right Panel - Image (Desktop only) */}
-      <div className="hidden lg:block flex-1 bg-gradient-to-br from-surface to-card p-12">
-        <div className="h-full rounded-3xl overflow-hidden relative">
+      {/* Right Panel - Visual (Desktop only) */}
+      <div className="hidden lg:flex flex-1 bg-primary p-8">
+        <div className="w-full h-full rounded-2xl overflow-hidden relative flex items-center justify-center">
           <img
             src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=1200&fit=crop"
             alt="Premium Headphones"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          <div className="absolute inset-0 bg-primary/60" />
           <div className="absolute bottom-10 left-10 right-10">
-            <h2 className="font-display text-3xl font-bold text-foreground mb-2">Intelligent Audio Experience</h2>
-            <p className="text-muted-foreground">Discover the smartest audio gear for your mind.</p>
+            <h2 className="text-3xl font-bold text-primary-foreground mb-2">Premium Tech Experience</h2>
+            <p className="text-primary-foreground/80">Discover the best gadgets for your lifestyle.</p>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useProduct, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 const ProductDetails = () => {
   const { slug } = useParams();
@@ -67,6 +68,7 @@ const ProductDetails = () => {
   const handleAddToCart = () => {
     if (!isOutOfStock) {
       addToCart(product, quantity);
+      toast.success(`Added ${quantity} × ${product.name} to cart`);
     }
   };
 
@@ -142,12 +144,12 @@ const ProductDetails = () => {
             <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-2">
               {product.brand || "Brainhub"}
             </span>
-            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-4">{product.name}</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">{product.name}</h1>
 
             {product.rating && (
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-primary filled">star</span>
+                  <span className="material-symbols-outlined text-warning filled">star</span>
                   <span className="font-semibold">{product.rating}</span>
                 </div>
                 <span className="text-muted-foreground">• {product.category?.name}</span>
@@ -159,17 +161,17 @@ const ProductDetails = () => {
             {/* Stock Status */}
             <div className="mb-6">
               {isOutOfStock ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
                   <span className="material-symbols-outlined text-[18px]">cancel</span>
                   Out of Stock
                 </span>
               ) : stockStatus.type === 'low' ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-100 text-orange-700 text-sm font-medium">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-warning/10 text-warning text-sm font-medium">
                   <span className="material-symbols-outlined text-[18px]">warning</span>
                   {stockStatus.message}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-green-100 text-green-700 text-sm font-medium">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 text-success text-sm font-medium">
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
                   In Stock
                 </span>
@@ -178,31 +180,31 @@ const ProductDetails = () => {
 
             {/* Price */}
             <div className="flex items-center gap-4 mb-8">
-              <span className="text-3xl font-bold">{formatPrice(product.price)}</span>
+              <span className="text-3xl font-bold text-foreground">{formatPrice(product.price)}</span>
             </div>
 
             <div className="flex gap-4">
               <div className="flex items-center border border-border rounded-lg">
                 <button 
                   onClick={() => setQuantity(Math.max(1, quantity - 1))} 
-                  className="px-4 py-3 hover:bg-muted rounded-l-lg transition-colors"
+                  className="px-4 py-3 hover:bg-muted rounded-l-lg transition-colors text-foreground"
                   disabled={isOutOfStock}
                 >
-                  -
+                  <span className="material-symbols-outlined text-lg">remove</span>
                 </button>
-                <span className="px-4 py-3 font-medium">{quantity}</span>
+                <span className="px-4 py-3 font-medium text-foreground min-w-[48px] text-center">{quantity}</span>
                 <button 
                   onClick={() => setQuantity(quantity + 1)} 
-                  className="px-4 py-3 hover:bg-muted rounded-r-lg transition-colors"
+                  className="px-4 py-3 hover:bg-muted rounded-r-lg transition-colors text-foreground"
                   disabled={isOutOfStock}
                 >
-                  +
+                  <span className="material-symbols-outlined text-lg">add</span>
                 </button>
               </div>
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`flex-1 py-4 flex items-center justify-center gap-2 rounded-lg font-semibold transition-all ${
+                className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg font-semibold transition-all ${
                   isOutOfStock 
                     ? 'bg-muted text-muted-foreground cursor-not-allowed' 
                     : 'btn-primary'
@@ -216,13 +218,13 @@ const ProductDetails = () => {
             {/* Category Info */}
             {product.category && (
               <div className="mt-10 pt-8 border-t border-border">
-                <h3 className="font-display text-lg font-semibold mb-4">Category</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Category</h3>
                 <button
                   onClick={() => navigate(`/products?category=${product.category?.slug}`)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
                 >
                   <span className="material-symbols-outlined text-primary">{product.category.icon || "category"}</span>
-                  <span>{product.category.name}</span>
+                  <span className="text-foreground">{product.category.name}</span>
                 </button>
               </div>
             )}

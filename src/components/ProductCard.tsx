@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Product, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 interface ProductCardProps extends Product {
   onAddToCart?: () => void;
@@ -17,26 +18,26 @@ const ProductCard = (product: ProductCardProps) => {
     if (!isOutOfStock) {
       addToCart(product);
       product.onAddToCart?.();
+      toast.success(`${product.name} added to cart`);
     }
   };
 
-
   return (
     <div
-      className="group flex flex-col cursor-pointer card overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/30"
+      className="group flex flex-col cursor-pointer card overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/20"
       onClick={() => navigate(`/product/${product.slug}`)}
     >
       {/* Image Container */}
       <div className="relative aspect-square w-full overflow-hidden bg-muted">
         {/* Badges */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+        <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1.5">
           {product.is_new_arrival && (
             <span className="px-2 py-1 bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-wider rounded">
               New
             </span>
           )}
           {stockStatus.type === 'low' && (
-            <span className="px-2 py-1 bg-destructive text-destructive-foreground text-[10px] font-semibold rounded">
+            <span className="px-2 py-1 bg-warning text-warning-foreground text-[10px] font-semibold rounded">
               {stockStatus.message}
             </span>
           )}
@@ -46,7 +47,6 @@ const ProductCard = (product: ProductCardProps) => {
             </span>
           )}
         </div>
-
 
         {/* Product Image */}
         <div
@@ -58,7 +58,7 @@ const ProductCard = (product: ProductCardProps) => {
         {!isOutOfStock && (
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:opacity-90"
+            className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:opacity-90 shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
             <span className="hidden sm:inline">Add</span>
@@ -67,25 +67,25 @@ const ProductCard = (product: ProductCardProps) => {
       </div>
 
       {/* Product Info */}
-      <div className="p-4 flex flex-col gap-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="p-3 lg:p-4 flex flex-col gap-1">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           {product.brand || "Brainhub"}
         </p>
-        <h3 className="font-display text-base font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
           {product.name}
         </h3>
 
         {/* Rating */}
         {product.rating && (
-          <div className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px] text-primary filled">star</span>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="material-symbols-outlined text-[14px] text-warning filled">star</span>
             <span className="text-xs font-medium text-foreground">{product.rating}</span>
           </div>
         )}
 
         {/* Price */}
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-lg font-bold text-foreground">{formatPrice(product.price)}</span>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-base lg:text-lg font-bold text-foreground">{formatPrice(product.price)}</span>
         </div>
       </div>
     </div>
