@@ -13,6 +13,12 @@ interface ScanProductModalProps {
   onProductAdded: () => void;
 }
 
+interface OfficialImage {
+  url: string;
+  source: string;
+  confidence: "high" | "medium" | "low";
+}
+
 interface ProductData {
   name: string;
   description: string;
@@ -21,12 +27,15 @@ interface ProductData {
   brand: string | null;
   isNewCategory: boolean;
   officialImageUrl: string | null;
+  officialImages?: OfficialImage[];
 }
 
 const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [productPreview, setProductPreview] = useState<ProductData | null>(null);
+  const [officialImages, setOfficialImages] = useState<OfficialImage[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // Editable fields
@@ -81,6 +90,8 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
     setEditCategory("");
     setUseNewCategory(false);
     setSelectedCategoryId("");
+    setOfficialImages([]);
+    setSelectedImageIndex(0);
     stopCamera();
   };
 
@@ -109,7 +120,16 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       if (data.error) throw new Error(data.error);
 
       setProductPreview(data);
-      toast.success("Product identified!");
+      
+      // Set official images if available
+      if (data.officialImages && data.officialImages.length > 0) {
+        setOfficialImages(data.officialImages);
+        setSelectedImageIndex(0);
+        toast.success(`Product identified! Found ${data.officialImages.length} official image(s).`);
+      } else {
+        setOfficialImages([]);
+        toast.success("Product identified! Using uploaded photo.");
+      }
     } catch (error) {
       console.error("Error scanning product:", error);
       toast.error(error instanceof Error ? error.message : "Failed to scan product");
@@ -212,11 +232,14 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         categoryId = selectedCategoryId;
       }
 
-      // Determine which image to use - prefer official image
+      // Determine which image to use - prefer selected official image
       let finalImageUrl: string;
       
-      if (productPreview?.officialImageUrl) {
-        // Use official image URL directly
+      if (officialImages.length > 0 && officialImages[selectedImageIndex]) {
+        // Use selected official image URL directly
+        finalImageUrl = officialImages[selectedImageIndex].url;
+      } else if (productPreview?.officialImageUrl) {
+        // Fallback to first official image URL
         finalImageUrl = productPreview.officialImageUrl;
       } else if (imagePreview) {
         // Upload the captured/selected image to storage
@@ -343,16 +366,22 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         {isScanning && (
           <div className="flex flex-col items-center gap-4 py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Analyzing product...</p>
+            <p className="text-sm text-muted-foreground">Analyzing product & searching for official images...</p>
           </div>
         )}
 
         {productPreview && !isScanning && (
           <div className="flex flex-col gap-4 py-4">
-            {(productPreview.officialImageUrl || imagePreview) && (
-              <div className="space-y-2">
+            {/* Image Selection Section */}
+            <div className="space-y-3">
+              {/* Main Image Display */}
+              <div className="relative">
                 <img 
-                  src={productPreview.officialImageUrl || imagePreview!} 
+                  src={
+                    officialImages.length > 0 
+                      ? officialImages[selectedImageIndex]?.url 
+                      : (productPreview.officialImageUrl || imagePreview!)
+                  } 
                   alt="Product preview" 
                   className="w-full h-48 object-contain rounded-lg bg-muted"
                   onError={(e) => {
@@ -362,13 +391,83 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
                     }
                   }}
                 />
-                {productPreview.officialImageUrl && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    ✓ Official product image found
-                  </p>
+                {officialImages.length > 0 && (
+                  <span className="absolute top-2 right-2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs rounded-full">
+                    {officialImages[selectedImageIndex]?.source}
+                  </span>
                 )}
               </div>
-            )}
+              
+              {/* Image Thumbnails - only show if multiple images */}
+              {officialImages.length > 1 && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Select image ({officialImages.length} found)</Label>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {officialImages.map((img, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                          selectedImageIndex === index 
+                            ? 'border-primary' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <img 
+                          src={img.url} 
+                          alt={`Option ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = imagePreview || '';
+                          }}
+                        />
+                        <span className={`absolute bottom-0 left-0 right-0 text-[10px] py-0.5 text-center ${
+                          img.confidence === 'high' 
+                            ? 'bg-green-500/90 text-white' 
+                            : img.confidence === 'medium'
+                            ? 'bg-yellow-500/90 text-black'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {img.source}
+                        </span>
+                      </button>
+                    ))}
+                    {/* Option to use uploaded photo */}
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOfficialImages([]);
+                          setSelectedImageIndex(0);
+                        }}
+                        className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/50 transition-colors"
+                      >
+                        <img 
+                          src={imagePreview} 
+                          alt="Your photo"
+                          className="w-full h-full object-cover opacity-70"
+                        />
+                        <span className="absolute bottom-0 left-0 right-0 text-[10px] py-0.5 text-center bg-muted text-muted-foreground">
+                          Your photo
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Status indicator */}
+              <p className="text-xs text-muted-foreground text-center">
+                {officialImages.length > 0 ? (
+                  <>✓ {officialImages.length} official image{officialImages.length > 1 ? 's' : ''} found via web search</>
+                ) : productPreview.officialImageUrl ? (
+                  <>✓ Official product image found</>
+                ) : (
+                  <>Using your uploaded photo (no official images found)</>
+                )}
+              </p>
+            </div>
             
             <div className="space-y-4">
               <div>
