@@ -5,6 +5,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface ImageResult {
+  url: string;
+  source: string;
+  confidence: "high" | "medium" | "low";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +31,9 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Use AI to analyze the product image - using pro model for better web search
+    // Step 1: Use AI to identify the product from the image
+    console.log("Step 1: Analyzing product image with AI...");
+    
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -40,11 +48,7 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `You are a product identification expert with web search capabilities. Your PRIMARY task is to identify this product and find its OFFICIAL product image from the internet.
-
-CRITICAL: You MUST search the web to find an official, high-quality product image. This is essential - do not skip this step.
-
-Analyze this product image and provide the following information in JSON format:
+                text: `You are a product identification expert. Analyze this product image and provide the following information in JSON format:
 
 1. name: The official product name (be specific, include brand if visible)
 2. description: A detailed product description (2-3 sentences about features and benefits)
@@ -52,12 +56,6 @@ Analyze this product image and provide the following information in JSON format:
 4. category: The product category. Must be one of these existing categories if it matches: "Headphones", "Speakers", "Gaming", "Fans", "Flash Drives", "Routers", "Airpods/Earbuds", "Action Figures". If the product doesn't fit any existing category, suggest a new category name.
 5. brand: The brand name if visible, otherwise null
 6. isNewCategory: true if you're suggesting a new category, false if using an existing one
-7. officialImageUrl: THIS IS MANDATORY - Search the web extensively for an official product image URL. Check these sources in order:
-   - Manufacturer's official website
-   - Amazon product pages
-   - Major retailers (Best Buy, Walmart, Target, Jumia, Konga)
-   - Official brand social media or press releases
-   The URL must be a direct link to an image file (.jpg, .png, .webp) or a valid CDN URL that displays the image directly. ONLY return null if you have exhausted all search options and truly cannot find any official image.
 
 Respond ONLY with valid JSON, no additional text. Example:
 {
@@ -66,8 +64,7 @@ Respond ONLY with valid JSON, no additional text. Example:
   "price": 25000,
   "category": "Headphones",
   "brand": "JBL",
-  "isNewCategory": false,
-  "officialImageUrl": "https://m.media-amazon.com/images/I/61Zt94S9UvL._AC_SL1500_.jpg"
+  "isNewCategory": false
 }`
               },
               {
@@ -112,7 +109,6 @@ Respond ONLY with valid JSON, no additional text. Example:
     // Parse the JSON response from AI
     let productData;
     try {
-      // Remove any markdown code block markers if present
       const cleanedContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       productData = JSON.parse(cleanedContent);
     } catch (parseError) {
@@ -120,13 +116,67 @@ Respond ONLY with valid JSON, no additional text. Example:
       throw new Error("Failed to parse product information");
     }
 
-    console.log("Product data extracted:", {
-      name: productData.name,
-      hasOfficialImage: !!productData.officialImageUrl
+    console.log("AI identified product:", productData.name, "Brand:", productData.brand);
+
+    // Step 2: Use Firecrawl to search for official product images
+    console.log("Step 2: Searching for official product images with Firecrawl...");
+    
+    let officialImages: ImageResult[] = [];
+    
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+      
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        const firecrawlResponse = await fetch(
+          `${SUPABASE_URL}/functions/v1/firecrawl-product-search`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              productName: productData.name,
+              brand: productData.brand,
+            }),
+          }
+        );
+
+        if (firecrawlResponse.ok) {
+          const firecrawlData = await firecrawlResponse.json();
+          if (firecrawlData.images && firecrawlData.images.length > 0) {
+            officialImages = firecrawlData.images;
+            console.log(`Found ${officialImages.length} official images via Firecrawl`);
+          } else {
+            console.log("No official images found via Firecrawl");
+          }
+        } else {
+          console.error("Firecrawl search failed:", await firecrawlResponse.text());
+        }
+      } else {
+        console.log("Supabase environment variables not available for Firecrawl call");
+      }
+    } catch (firecrawlError) {
+      console.error("Error calling Firecrawl:", firecrawlError);
+      // Continue without official images - not a critical error
+    }
+
+    // Build response with official images
+    const response = {
+      ...productData,
+      officialImages,
+      officialImageUrl: officialImages.length > 0 ? officialImages[0].url : null,
+    };
+
+    console.log("Product scan complete:", {
+      name: response.name,
+      hasOfficialImages: officialImages.length > 0,
+      imageCount: officialImages.length,
     });
 
     return new Response(
-      JSON.stringify(productData),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {

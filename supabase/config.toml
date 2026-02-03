@@ -1,1 +1,10 @@
 project_id = "hxpcnkjgobczwmgswqon"
+
+[functions.scan-product]
+verify_jwt = false
+
+[functions.firecrawl-product-search]
+verify_jwt = false
+
+[functions.process-repair-request]
+verify_jwt = false
