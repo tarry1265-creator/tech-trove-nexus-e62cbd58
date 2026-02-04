@@ -49,9 +49,9 @@ serve(async (req) => {
     if (hasGoogleSearch) {
       console.log("Using Google Custom Search API (primary)...");
       
-      // Search 1: Official product images
-      const query1 = `${brandPrefix}${productName} product`;
-      console.log(`Search 1: "${query1}"`);
+      // Search 1: Exact product name for official images
+      const query1 = `"${productName}" ${brand || ""} official product image`.trim();
+      console.log(`Search 1 (exact name): "${query1}"`);
       
       try {
         const googleImages1 = await searchWithGoogleCSE(
@@ -68,10 +68,10 @@ serve(async (req) => {
         console.error("Google CSE search 1 failed:", err);
       }
 
-      // Search 2: If not enough results, try alternate query
+      // Search 2: Brand + product for more coverage
       if (images.length < 5) {
-        const query2 = `${productName} ${brand || ""} official`.trim();
-        console.log(`Search 2: "${query2}"`);
+        const query2 = `${brandPrefix}${productName}`.trim();
+        console.log(`Search 2 (brand + name): "${query2}"`);
         
         try {
           const googleImages2 = await searchWithGoogleCSE(
@@ -86,6 +86,27 @@ serve(async (req) => {
           console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
         } catch (err) {
           console.error("Google CSE search 2 failed:", err);
+        }
+      }
+
+      // Search 3: Product name on retailer sites
+      if (images.length < 5) {
+        const query3 = `${productName} site:jumia.com.ng OR site:amazon.com`;
+        console.log(`Search 3 (retailer sites): "${query3}"`);
+        
+        try {
+          const googleImages3 = await searchWithGoogleCSE(
+            GOOGLE_SEARCH_API_KEY!,
+            GOOGLE_SEARCH_ENGINE_ID!,
+            query3,
+            productName,
+            brand,
+            seenUrls
+          );
+          images.push(...googleImages3);
+          console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
+        } catch (err) {
+          console.error("Google CSE search 3 failed:", err);
         }
       }
     }
