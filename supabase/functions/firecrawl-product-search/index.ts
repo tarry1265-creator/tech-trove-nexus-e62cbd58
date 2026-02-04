@@ -28,15 +28,11 @@ serve(async (req) => {
 
     const GOOGLE_SEARCH_API_KEY = Deno.env.get("GOOGLE_SEARCH_API_KEY");
     const GOOGLE_SEARCH_ENGINE_ID = Deno.env.get("GOOGLE_SEARCH_ENGINE_ID");
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
-    const hasGoogleSearch = GOOGLE_SEARCH_API_KEY && GOOGLE_SEARCH_ENGINE_ID;
-    const hasFirecrawl = !!FIRECRAWL_API_KEY;
-
-    if (!hasGoogleSearch && !hasFirecrawl) {
-      console.error("No search API configured (neither Google Custom Search nor Firecrawl)");
+    if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
+      console.error("Google Custom Search API not configured");
       return new Response(
-        JSON.stringify({ error: "No search API configured", images: [] }),
+        JSON.stringify({ error: "Google Custom Search API not configured", images: [] }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
