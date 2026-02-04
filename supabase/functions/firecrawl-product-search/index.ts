@@ -39,9 +39,9 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    // Google-only search for official product images
-    console.log("Searching Google for official product images...");
-    const googleQuery = `${brandPrefix}${productName} official product image high resolution`;
+    // Strategy 1: Google search for official product images
+    console.log("Strategy 1: Searching Google for official product images...");
+    const googleQuery = `${brandPrefix}${productName} official product image high resolution -logo -icon -banner`;
     
     try {
       const googleImages = await searchWithFirecrawl(
@@ -49,7 +49,8 @@ serve(async (req) => {
         googleQuery,
         productName,
         brand,
-        seenUrls
+        seenUrls,
+        "Google"
       );
       images.push(...googleImages);
       console.log(`Found ${googleImages.length} images from Google search`);
@@ -57,10 +58,30 @@ serve(async (req) => {
       console.error("Google search failed:", err);
     }
 
-    // If not enough images, try a more specific search
-    if (images.length < 5) {
-      console.log("Trying alternative Google search...");
-      const altQuery = `${brandPrefix}${productName} product photo png OR jpg`;
+    // Strategy 2: Jumia Nigeria search (great for local products)
+    console.log("Strategy 2: Searching Jumia for product images...");
+    const jumiaQuery = `${brandPrefix}${productName} site:jumia.com.ng`;
+    
+    try {
+      const jumiaImages = await searchWithFirecrawl(
+        FIRECRAWL_API_KEY,
+        jumiaQuery,
+        productName,
+        brand,
+        seenUrls,
+        "Jumia"
+      );
+      images.push(...jumiaImages);
+      console.log(`Found ${jumiaImages.length} images from Jumia search`);
+    } catch (err) {
+      console.error("Jumia search failed:", err);
+    }
+
+    // Strategy 3: If not enough high-quality images, try alternative Google search
+    const highConfidenceCount = images.filter(img => img.confidence === "high").length;
+    if (highConfidenceCount < 3) {
+      console.log("Strategy 3: Trying refined Google search...");
+      const altQuery = `"${productName}" product photo -review -unboxing -thumbnail`;
       
       try {
         const altImages = await searchWithFirecrawl(
@@ -68,31 +89,36 @@ serve(async (req) => {
           altQuery,
           productName,
           brand,
-          seenUrls
+          seenUrls,
+          "Google"
         );
         images.push(...altImages);
-        console.log(`Found ${altImages.length} additional images from alternative search`);
+        console.log(`Found ${altImages.length} additional images from refined search`);
       } catch (err) {
-        console.error("Alternative search failed:", err);
+        console.error("Refined search failed:", err);
       }
     }
 
-    // Sort by confidence
+    // Sort by confidence (high first, then medium, then low)
     images.sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 };
       return order[a.confidence] - order[b.confidence];
     });
 
-    // Limit to top 8 images
-    const topImages = images.slice(0, 8);
+    // Limit to top 10 images
+    const topImages = images.slice(0, 10);
 
-    console.log(`Total: Found ${topImages.length} product images`);
+    console.log(`Total: Found ${topImages.length} product images (${images.filter(i => i.confidence === "high").length} high confidence)`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         images: topImages,
         query: googleQuery,
+        sources: {
+          google: images.filter(i => i.source === "Google").length,
+          jumia: images.filter(i => i.source === "Jumia").length,
+        }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -111,7 +137,8 @@ async function searchWithFirecrawl(
   query: string,
   productName: string,
   brand: string | null,
-  seenUrls: Set<string>
+  seenUrls: Set<string>,
+  defaultSource: string = "Web"
 ): Promise<ImageResult[]> {
   const images: ImageResult[] = [];
 
@@ -123,7 +150,7 @@ async function searchWithFirecrawl(
     },
     body: JSON.stringify({
       query,
-      limit: 10,
+      limit: 15,
       scrapeOptions: {
         formats: ["markdown", "links"],
         waitFor: 3000,
@@ -155,14 +182,17 @@ async function searchWithFirecrawl(
       if (!isValidProductImageUrl(imageUrl)) continue;
       if (isLikelyUnrelatedImage(imageUrl, altText)) continue;
       
+      // Check minimum image quality indicators
+      if (!hasMinimumQuality(imageUrl)) continue;
+      
       seenUrls.add(imageUrl);
       
-      const source = extractSource(result.url || imageUrl);
+      const source = extractSource(result.url || imageUrl, defaultSource);
       const confidence = determineConfidence(imageUrl, altText, productName, brand, result.url);
       
       images.push({ url: imageUrl, source, confidence });
       
-      if (images.length >= 5) break;
+      if (images.length >= 8) break;
     }
 
     // Also extract direct image URLs
@@ -173,21 +203,59 @@ async function searchWithFirecrawl(
       if (seenUrls.has(imageUrl)) continue;
       if (!isValidProductImageUrl(imageUrl)) continue;
       if (isLikelyUnrelatedImage(imageUrl, "")) continue;
+      if (!hasMinimumQuality(imageUrl)) continue;
       
       seenUrls.add(imageUrl);
       
-      const source = extractSource(result.url || imageUrl);
+      const source = extractSource(result.url || imageUrl, defaultSource);
       const confidence = determineConfidence(imageUrl, "", productName, brand, result.url);
       
       images.push({ url: imageUrl, source, confidence });
       
-      if (images.length >= 5) break;
+      if (images.length >= 8) break;
     }
 
-    if (images.length >= 5) break;
+    if (images.length >= 8) break;
   }
 
   return images;
+}
+
+// Check if image URL suggests minimum quality (not thumbnails, not tiny)
+function hasMinimumQuality(url: string): boolean {
+  const urlLower = url.toLowerCase();
+  
+  // Reject known small/thumbnail patterns
+  const lowQualityPatterns = [
+    /[_-]thumb/i,
+    /[_-]small/i,
+    /[_-]tiny/i,
+    /\/thumb\//i,
+    /\/thumbnails?\//i,
+    /[_-](\d{2,3})x(\d{2,3})\./i, // dimensions like _50x50. or _120x120.
+    /\?.*w=\d{1,2}(&|$)/i, // query params like ?w=50
+    /\?.*width=\d{1,2}(&|$)/i,
+    /\/s\d{2,3}\//i, // paths like /s50/ or /s120/
+  ];
+  
+  if (lowQualityPatterns.some(pattern => pattern.test(urlLower))) {
+    return false;
+  }
+  
+  // Prefer known high-quality patterns
+  const highQualityPatterns = [
+    /_SL\d{3,4}/i, // Amazon high-res _SL1500
+    /_AC_SL/i, // Amazon AC sizing
+    /\/large\//i,
+    /\/original\//i,
+    /\/full\//i,
+    /-large\./i,
+    /-original\./i,
+    /[_-]\d{3,4}x\d{3,4}\./i, // dimensions like _500x500. or -1000x1000.
+  ];
+  
+  // Boost confidence for high-quality patterns (not a hard requirement)
+  return true;
 }
 
 function isValidProductImageUrl(url: string): boolean {
@@ -225,22 +293,20 @@ function isLikelyUnrelatedImage(url: string, altText: string): boolean {
   
   // Skip common non-product images
   const unrelatedPatterns = [
-    /thumb/i,
-    /tiny/i,
-    /icon/i,
-    /avatar/i,
-    /logo/i,
+    /[_\/\-]icon[_\/\-.]/i,
+    /[_\/\-]avatar[_\/\-.]/i,
+    /[_\/\-]logo[_\/\-.]/i,
     /favicon/i,
-    /banner/i,
-    /ad[_-]?/i,
+    /[_\/\-]banner[_\/\-.]/i,
+    /[_\/\-]ad[_\/\-.]/i,
     /sponsor/i,
-    /badge/i,
-    /rating/i,
-    /star/i,
-    /cart/i,
+    /[_\/\-]badge[_\/\-.]/i,
+    /[_\/\-]rating[_\/\-.]/i,
+    /[_\/\-]star[_\/\-.]/i,
+    /[_\/\-]cart[_\/\-.]/i,
     /checkout/i,
     /payment/i,
-    /visa|mastercard|paypal/i,
+    /visa|mastercard|paypal|verve/i,
     /shipping/i,
     /delivery/i,
     /\.gif$/i,
@@ -249,37 +315,60 @@ function isLikelyUnrelatedImage(url: string, altText: string): boolean {
     /loading/i,
     /spinner/i,
     /profile/i,
-    /user/i,
+    /user[_\/\-]/i,
     /social/i,
-    /facebook|twitter|instagram|linkedin/i,
+    /facebook|twitter|instagram|linkedin|whatsapp/i,
     /arrow|chevron|caret/i,
     /close|menu|hamburger/i,
-    /\d{2,3}x\d{2,3}/i, // Small dimensions like 50x50
+    /\d{2}x\d{2}\./i, // Very small dimensions like 50x50.
+    /btn[_\/\-]/i,
+    /button/i,
+    /share/i,
+    /wishlist/i,
+    /compare/i,
+    /notification/i,
+    /alert/i,
+    /warning/i,
+    /error/i,
+    /success/i,
+    /info[_\/\-.]/i,
+    /help/i,
+    /question/i,
+    /search[_\/\-.]/i,
+    /filter/i,
+    /sort/i,
+    /grid/i,
+    /list[_\/\-.]/i,
+    /view[_\/\-.]/i,
+    /zoom/i,
+    /play/i,
+    /video/i,
+    /youtube/i,
+    /vimeo/i,
   ];
   
   const combinedText = urlLower + " " + altLower;
   return unrelatedPatterns.some(pattern => pattern.test(combinedText));
 }
 
-function extractSource(url: string): string {
+function extractSource(url: string, defaultSource: string = "Web"): string {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
     
-    if (hostname.includes("amazon")) return "Amazon";
     if (hostname.includes("jumia")) return "Jumia";
+    if (hostname.includes("amazon")) return "Amazon";
+    if (hostname.includes("google")) return "Google";
     if (hostname.includes("ebay")) return "eBay";
     if (hostname.includes("walmart")) return "Walmart";
     if (hostname.includes("aliexpress")) return "AliExpress";
-    if (hostname.includes("bestbuy")) return "Best Buy";
-    if (hostname.includes("target")) return "Target";
-    if (hostname.includes("newegg")) return "Newegg";
-    if (hostname.includes("google")) return "Google";
+    if (hostname.includes("konga")) return "Konga";
+    if (hostname.includes("slot")) return "Slot";
     
-    // Return cleaned hostname
-    return hostname.replace(/^www\./, "").split(".")[0];
+    // Return the default source passed in (Google or Jumia based on search)
+    return defaultSource;
   } catch {
-    return "Web";
+    return defaultSource;
   }
 }
 
