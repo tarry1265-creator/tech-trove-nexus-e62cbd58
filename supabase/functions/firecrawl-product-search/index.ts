@@ -26,11 +26,17 @@ serve(async (req) => {
       );
     }
 
+    const GOOGLE_SEARCH_API_KEY = Deno.env.get("GOOGLE_SEARCH_API_KEY");
+    const GOOGLE_SEARCH_ENGINE_ID = Deno.env.get("GOOGLE_SEARCH_ENGINE_ID");
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-    if (!FIRECRAWL_API_KEY) {
-      console.error("FIRECRAWL_API_KEY is not configured");
+
+    const hasGoogleSearch = GOOGLE_SEARCH_API_KEY && GOOGLE_SEARCH_ENGINE_ID;
+    const hasFirecrawl = !!FIRECRAWL_API_KEY;
+
+    if (!hasGoogleSearch && !hasFirecrawl) {
+      console.error("No search API configured (neither Google Custom Search nor Firecrawl)");
       return new Response(
-        JSON.stringify({ error: "Firecrawl is not configured", images: [] }),
+        JSON.stringify({ error: "No search API configured", images: [] }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -39,63 +45,70 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    // Strategy 1: Google search for official product images
-    console.log("Strategy 1: Searching Google for official product images...");
-    const googleQuery = `${brandPrefix}${productName} official product image high resolution -logo -icon -banner`;
-    
-    try {
-      const googleImages = await searchWithFirecrawl(
-        FIRECRAWL_API_KEY,
-        googleQuery,
-        productName,
-        brand,
-        seenUrls,
-        "Google"
-      );
-      images.push(...googleImages);
-      console.log(`Found ${googleImages.length} images from Google search`);
-    } catch (err) {
-      console.error("Google search failed:", err);
-    }
-
-    // Strategy 2: Jumia Nigeria search (great for local products)
-    console.log("Strategy 2: Searching Jumia for product images...");
-    const jumiaQuery = `${brandPrefix}${productName} site:jumia.com.ng`;
-    
-    try {
-      const jumiaImages = await searchWithFirecrawl(
-        FIRECRAWL_API_KEY,
-        jumiaQuery,
-        productName,
-        brand,
-        seenUrls,
-        "Jumia"
-      );
-      images.push(...jumiaImages);
-      console.log(`Found ${jumiaImages.length} images from Jumia search`);
-    } catch (err) {
-      console.error("Jumia search failed:", err);
-    }
-
-    // Strategy 3: If not enough high-quality images, try alternative Google search
-    const highConfidenceCount = images.filter(img => img.confidence === "high").length;
-    if (highConfidenceCount < 3) {
-      console.log("Strategy 3: Trying refined Google search...");
-      const altQuery = `"${productName}" product photo -review -unboxing -thumbnail`;
+    // PRIMARY: Use Google Custom Search API (more accurate for product images)
+    if (hasGoogleSearch) {
+      console.log("Using Google Custom Search API (primary)...");
+      
+      // Search 1: Official product images
+      const query1 = `${brandPrefix}${productName} product`;
+      console.log(`Search 1: "${query1}"`);
       
       try {
-        const altImages = await searchWithFirecrawl(
-          FIRECRAWL_API_KEY,
-          altQuery,
+        const googleImages1 = await searchWithGoogleCSE(
+          GOOGLE_SEARCH_API_KEY!,
+          GOOGLE_SEARCH_ENGINE_ID!,
+          query1,
+          productName,
+          brand,
+          seenUrls
+        );
+        images.push(...googleImages1);
+        console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+      } catch (err) {
+        console.error("Google CSE search 1 failed:", err);
+      }
+
+      // Search 2: If not enough results, try alternate query
+      if (images.length < 5) {
+        const query2 = `${productName} ${brand || ""} official`.trim();
+        console.log(`Search 2: "${query2}"`);
+        
+        try {
+          const googleImages2 = await searchWithGoogleCSE(
+            GOOGLE_SEARCH_API_KEY!,
+            GOOGLE_SEARCH_ENGINE_ID!,
+            query2,
+            productName,
+            brand,
+            seenUrls
+          );
+          images.push(...googleImages2);
+          console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
+        } catch (err) {
+          console.error("Google CSE search 2 failed:", err);
+        }
+      }
+    }
+
+    // FALLBACK: Use Firecrawl if Google CSE didn't find enough images
+    if (hasFirecrawl && images.length < 3) {
+      console.log("Using Firecrawl as fallback...");
+      
+      const firecrawlQuery = `${brandPrefix}${productName} product image site:jumia.com.ng OR site:amazon.com`;
+      
+      try {
+        const firecrawlImages = await searchWithFirecrawl(
+          FIRECRAWL_API_KEY!,
+          firecrawlQuery,
           productName,
           brand,
           seenUrls,
-          "Google"
+          "Firecrawl"
         );
-        images.push(...altImages);
-        console.log(`Found ${altImages.length} additional images from refined search`);
+        images.push(...firecrawlImages);
+        console.log(`Found ${firecrawlImages.length} images from Firecrawl fallback`);
       } catch (err) {
-        console.error("Refined search failed:", err);
+        console.error("Firecrawl fallback failed:", err);
       }
     }
 
@@ -108,16 +121,16 @@ serve(async (req) => {
     // Limit to top 10 images
     const topImages = images.slice(0, 10);
 
-    console.log(`Total: Found ${topImages.length} product images (${images.filter(i => i.confidence === "high").length} high confidence)`);
+    const highConfidenceCount = topImages.filter(i => i.confidence === "high").length;
+    console.log(`Total: Found ${topImages.length} product images (${highConfidenceCount} high confidence)`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         images: topImages,
-        query: googleQuery,
         sources: {
-          google: images.filter(i => i.source === "Google").length,
-          jumia: images.filter(i => i.source === "Jumia").length,
+          googleCSE: images.filter(i => i.source.includes("Google") || i.source === "Jumia" || i.source === "Amazon").length,
+          firecrawl: images.filter(i => i.source === "Firecrawl").length,
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -131,6 +144,56 @@ serve(async (req) => {
     );
   }
 });
+
+// Google Custom Search API for image search
+async function searchWithGoogleCSE(
+  apiKey: string,
+  searchEngineId: string,
+  query: string,
+  productName: string,
+  brand: string | null,
+  seenUrls: Set<string>
+): Promise<ImageResult[]> {
+  const images: ImageResult[] = [];
+  
+  const params = new URLSearchParams({
+    key: apiKey,
+    cx: searchEngineId,
+    q: query,
+    searchType: "image",
+    num: "10",
+    imgSize: "large",
+    safe: "active",
+  });
+
+  const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Google CSE error:", response.status, errorText);
+    throw new Error(`Google CSE failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const items = data.items || [];
+
+  for (const item of items) {
+    const imageUrl = item.link;
+    
+    if (!imageUrl || seenUrls.has(imageUrl)) continue;
+    if (!isValidProductImageUrl(imageUrl)) continue;
+    if (isLikelyUnrelatedImage(imageUrl, item.title || "")) continue;
+    
+    seenUrls.add(imageUrl);
+    
+    const source = extractSource(item.displayLink || imageUrl, "Google");
+    const confidence = determineConfidence(imageUrl, item.title || "", productName, brand, item.displayLink);
+    
+    images.push({ url: imageUrl, source, confidence });
+  }
+
+  return images;
+}
 
 async function searchWithFirecrawl(
   apiKey: string,
