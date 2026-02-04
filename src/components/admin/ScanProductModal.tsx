@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCategories } from "@/hooks/useProducts";
+import { Camera, Upload, X, Check, Loader2, Image, RotateCcw, Plus, Sparkles } from "lucide-react";
 
 interface ScanProductModalProps {
   open: boolean;
@@ -37,6 +38,7 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
   const [officialImages, setOfficialImages] = useState<OfficialImage[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<string>("all");
   
   // Editable fields
   const [editName, setEditName] = useState("");
@@ -53,6 +55,18 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
   
   const { data: categories } = useCategories();
 
+  // Get unique sources from images
+  const uniqueSources = useMemo(() => {
+    const sources = new Set(officialImages.map(img => img.source));
+    return ["all", ...Array.from(sources)];
+  }, [officialImages]);
+
+  // Filter images by selected source
+  const filteredImages = useMemo(() => {
+    if (selectedSource === "all") return officialImages;
+    return officialImages.filter(img => img.source === selectedSource);
+  }, [officialImages, selectedSource]);
+
   // Update editable fields when product preview changes
   useEffect(() => {
     if (productPreview) {
@@ -63,7 +77,6 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       setEditCategory(productPreview.category);
       setUseNewCategory(productPreview.isNewCategory);
       
-      // Try to find matching category
       if (categories && !productPreview.isNewCategory) {
         const found = categories.find(c => 
           c.name.toLowerCase() === productPreview.category.toLowerCase()
@@ -77,6 +90,11 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       }
     }
   }, [productPreview, categories]);
+
+  // Reset selected index when source changes
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [selectedSource]);
 
   const resetState = () => {
     setIsScanning(false);
@@ -92,6 +110,7 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
     setSelectedCategoryId("");
     setOfficialImages([]);
     setSelectedImageIndex(0);
+    setSelectedSource("all");
     stopCamera();
   };
 
@@ -121,14 +140,14 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
 
       setProductPreview(data);
       
-      // Set official images if available
       if (data.officialImages && data.officialImages.length > 0) {
         setOfficialImages(data.officialImages);
         setSelectedImageIndex(0);
-        toast.success(`Product identified! Found ${data.officialImages.length} official image(s).`);
+        setSelectedSource("all");
+        toast.success(`Found ${data.officialImages.length} official image(s)`);
       } else {
         setOfficialImages([]);
-        toast.success("Product identified! Using uploaded photo.");
+        toast.success("Product identified!");
       }
     } catch (error) {
       console.error("Error scanning product:", error);
@@ -163,7 +182,7 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
-      toast.error("Could not access camera. Please check permissions.");
+      toast.error("Could not access camera");
       setShowCamera(false);
     }
   };
@@ -191,6 +210,16 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       .replace(/(^-|-$)/g, '');
   };
 
+  const getSelectedImageUrl = (): string => {
+    if (filteredImages.length > 0 && filteredImages[selectedImageIndex]) {
+      return filteredImages[selectedImageIndex].url;
+    }
+    if (officialImages.length > 0 && officialImages[0]) {
+      return officialImages[0].url;
+    }
+    return productPreview?.officialImageUrl || imagePreview || "";
+  };
+
   const addProduct = async () => {
     if (!imagePreview || !editName.trim()) {
       toast.error("Product name is required");
@@ -202,7 +231,6 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       let categoryId: string | null = null;
 
       if (useNewCategory && editCategory.trim()) {
-        // Check if category already exists
         const { data: existingCategory } = await supabase
           .from('categories')
           .select('id')
@@ -212,7 +240,6 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         if (existingCategory) {
           categoryId = existingCategory.id;
         } else {
-          // Create new category
           const { data: newCategory, error: categoryError } = await supabase
             .from('categories')
             .insert({
@@ -232,17 +259,15 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         categoryId = selectedCategoryId;
       }
 
-      // Determine which image to use - prefer selected official image
       let finalImageUrl: string;
       
-      if (officialImages.length > 0 && officialImages[selectedImageIndex]) {
-        // Use selected official image URL directly
-        finalImageUrl = officialImages[selectedImageIndex].url;
+      if (filteredImages.length > 0 && filteredImages[selectedImageIndex]) {
+        finalImageUrl = filteredImages[selectedImageIndex].url;
+      } else if (officialImages.length > 0 && officialImages[0]) {
+        finalImageUrl = officialImages[0].url;
       } else if (productPreview?.officialImageUrl) {
-        // Fallback to first official image URL
         finalImageUrl = productPreview.officialImageUrl;
       } else if (imagePreview) {
-        // Upload the captured/selected image to storage
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
         const base64Data = imagePreview.split(',')[1];
         const byteCharacters = atob(base64Data);
@@ -268,7 +293,6 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
         throw new Error("No image available");
       }
 
-      // Insert product
       const { error: productError } = await supabase
         .from('products')
         .insert({
@@ -291,292 +315,415 @@ const ScanProductModal = ({ open, onClose, onProductAdded }: ScanProductModalPro
       handleClose();
     } catch (error) {
       console.error("Error adding product:", error);
-      toast.error("Failed to add product. Please try again.");
+      toast.error("Failed to add product");
     } finally {
       setIsScanning(false);
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">qr_code_scanner</span>
-            Scan Product
-          </DialogTitle>
-        </DialogHeader>
+  // Scan & Capture View
+  const renderCaptureView = () => (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">AI Product Scanner</h2>
+            <p className="text-sm text-muted-foreground">Upload or capture a product image</p>
+          </div>
+        </div>
+        <button onClick={handleClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <X className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
 
-        {!showCamera && !imagePreview && !productPreview && (
-          <div className="flex flex-col gap-4 py-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Add products by scanning an image. The AI will identify the product details automatically.
+      {/* Upload Options */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="group relative h-40 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 hover:bg-primary/5 transition-all duration-200 flex flex-col items-center justify-center gap-3"
+        >
+          <div className="w-14 h-14 rounded-xl bg-background shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform">
+            <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <div className="text-center">
+            <p className="font-medium text-foreground">Upload Image</p>
+            <p className="text-xs text-muted-foreground">JPG, PNG, WebP</p>
+          </div>
+        </button>
+        
+        <button
+          onClick={startCamera}
+          className="group relative h-40 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 hover:bg-primary/5 transition-all duration-200 flex flex-col items-center justify-center gap-3"
+        >
+          <div className="w-14 h-14 rounded-xl bg-background shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform">
+            <Camera className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <div className="text-center">
+            <p className="font-medium text-foreground">Take Photo</p>
+            <p className="text-xs text-muted-foreground">Use camera</p>
+          </div>
+        </button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Info */}
+      <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
+        <div className="flex gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">AI-Powered Detection</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Our AI will identify the product, suggest pricing, and find official images from trusted sources.
             </p>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                variant="outline"
-                className="h-32 flex flex-col gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <span className="material-symbols-outlined text-3xl">upload_file</span>
-                <span className="text-sm">Pick a File</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="h-32 flex flex-col gap-2"
-                onClick={startCamera}
-              >
-                <span className="material-symbols-outlined text-3xl">photo_camera</span>
-                <span className="text-sm">Take a Picture</span>
-              </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Camera View
+  const renderCameraView = () => (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-foreground">Capture Product</h2>
+        <button onClick={() => { stopCamera(); setShowCamera(false); }} className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <X className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="relative rounded-2xl overflow-hidden bg-black">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full aspect-square object-cover"
+        />
+        {/* Camera overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-8 border-2 border-white/30 rounded-2xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white/50 rounded-full" />
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-3">
+        <Button variant="outline" className="flex-1" onClick={() => { stopCamera(); setShowCamera(false); }}>
+          Cancel
+        </Button>
+        <Button className="flex-1" onClick={capturePhoto}>
+          <Camera className="w-4 h-4 mr-2" />
+          Capture
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Scanning View
+  const renderScanningView = () => (
+    <div className="p-8 flex flex-col items-center justify-center min-h-[300px]">
+      <div className="relative">
+        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+        <div className="absolute -inset-2 rounded-3xl border-2 border-primary/20 animate-pulse" />
+      </div>
+      <h3 className="mt-6 text-lg font-semibold text-foreground">Analyzing Product</h3>
+      <p className="mt-2 text-sm text-muted-foreground text-center max-w-xs">
+        AI is identifying the product and searching for official images...
+      </p>
+      <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <span>This may take a few seconds</span>
+      </div>
+    </div>
+  );
+
+  // Product Found View
+  const renderProductView = () => (
+    <div className="flex flex-col max-h-[85vh]">
+      {/* Header */}
+      <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+            <Check className="w-4 h-4 text-green-600" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Product Found</h2>
+            <p className="text-xs text-muted-foreground">Review and confirm details</p>
+          </div>
+        </div>
+        <button onClick={handleClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <X className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Main Image Display */}
+        <div className="relative aspect-square w-full max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-muted">
+          <img 
+            src={getSelectedImageUrl()}
+            alt="Product preview" 
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              if (imagePreview && e.currentTarget.src !== imagePreview) {
+                e.currentTarget.src = imagePreview;
+              }
+            }}
+          />
+          {filteredImages.length > 0 && filteredImages[selectedImageIndex] && (
+            <div className="absolute top-3 right-3 px-2.5 py-1 bg-foreground/90 text-background text-xs font-medium rounded-full">
+              {filteredImages[selectedImageIndex].source}
             </div>
+          )}
+        </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-          </div>
-        )}
-
-        {showCamera && (
-          <div className="flex flex-col gap-4 py-4">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full aspect-square object-cover rounded-lg bg-muted"
-            />
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => { stopCamera(); setShowCamera(false); }}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={capturePhoto}>
-                <span className="material-symbols-outlined mr-2">camera</span>
-                Capture
-              </Button>
+        {/* Source Filter Buttons */}
+        {officialImages.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Image Sources</Label>
+              <span className="text-xs text-muted-foreground">{officialImages.length} found</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {uniqueSources.map((source) => {
+                const count = source === "all" 
+                  ? officialImages.length 
+                  : officialImages.filter(img => img.source === source).length;
+                
+                return (
+                  <button
+                    key={source}
+                    onClick={() => setSelectedSource(source)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                      selectedSource === source
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {source === "all" ? "All" : source}
+                    <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                      selectedSource === source
+                        ? 'bg-primary-foreground/20'
+                        : 'bg-background'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {isScanning && (
-          <div className="flex flex-col items-center gap-4 py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Analyzing product & searching for official images...</p>
-          </div>
-        )}
-
-        {productPreview && !isScanning && (
-          <div className="flex flex-col gap-4 py-4">
-            {/* Image Selection Section */}
-            <div className="space-y-3">
-              {/* Main Image Display */}
-              <div className="relative">
+        {/* Image Grid */}
+        {filteredImages.length > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            {filteredImages.map((img, index) => (
+              <button
+                key={`${img.source}-${index}`}
+                onClick={() => setSelectedImageIndex(index)}
+                className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                  selectedImageIndex === index 
+                    ? 'border-primary ring-2 ring-primary/20' 
+                    : 'border-transparent hover:border-border'
+                }`}
+              >
                 <img 
-                  src={
-                    officialImages.length > 0 
-                      ? officialImages[selectedImageIndex]?.url 
-                      : (productPreview.officialImageUrl || imagePreview!)
-                  } 
-                  alt="Product preview" 
-                  className="w-full h-48 object-contain rounded-lg bg-muted"
+                  src={img.url} 
+                  alt={`Option ${index + 1}`}
+                  className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Fallback to uploaded image if official URL fails
-                    if (imagePreview && e.currentTarget.src !== imagePreview) {
-                      e.currentTarget.src = imagePreview;
-                    }
+                    e.currentTarget.src = imagePreview || '';
                   }}
                 />
-                {officialImages.length > 0 && (
-                  <span className="absolute top-2 right-2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs rounded-full">
-                    {officialImages[selectedImageIndex]?.source}
-                  </span>
-                )}
-              </div>
-              
-              {/* Image Thumbnails - only show if multiple images */}
-              {officialImages.length > 1 && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Select image ({officialImages.length} found)</Label>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {officialImages.map((img, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setSelectedImageIndex(index)}
-                        className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedImageIndex === index 
-                            ? 'border-primary' 
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <img 
-                          src={img.url} 
-                          alt={`Option ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = imagePreview || '';
-                          }}
-                        />
-                        <span className={`absolute bottom-0 left-0 right-0 text-[10px] py-0.5 text-center ${
-                          img.confidence === 'high' 
-                            ? 'bg-green-500/90 text-white' 
-                            : img.confidence === 'medium'
-                            ? 'bg-yellow-500/90 text-black'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {img.source}
-                        </span>
-                      </button>
-                    ))}
-                    {/* Option to use uploaded photo */}
-                    {imagePreview && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOfficialImages([]);
-                          setSelectedImageIndex(0);
-                        }}
-                        className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/50 transition-colors"
-                      >
-                        <img 
-                          src={imagePreview} 
-                          alt="Your photo"
-                          className="w-full h-full object-cover opacity-70"
-                        />
-                        <span className="absolute bottom-0 left-0 right-0 text-[10px] py-0.5 text-center bg-muted text-muted-foreground">
-                          Your photo
-                        </span>
-                      </button>
-                    )}
+                {selectedImageIndex === index && (
+                  <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-primary" />
                   </div>
-                </div>
-              )}
-              
-              {/* Status indicator */}
-              <p className="text-xs text-muted-foreground text-center">
-                {officialImages.length > 0 ? (
-                  <>✓ {officialImages.length} official image{officialImages.length > 1 ? 's' : ''} found via web search</>
-                ) : productPreview.officialImageUrl ? (
-                  <>✓ Official product image found</>
-                ) : (
-                  <>Using your uploaded photo (no official images found)</>
                 )}
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="productName">Product Name</Label>
-                <Input
-                  id="productName"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Enter product name"
+                {/* Confidence indicator */}
+                <div className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${
+                  img.confidence === 'high' 
+                    ? 'bg-accent' 
+                    : img.confidence === 'medium'
+                    ? 'bg-primary'
+                    : 'bg-muted-foreground'
+                }`} />
+              </button>
+            ))}
+            {/* Use uploaded photo option */}
+            {imagePreview && (
+              <button
+                onClick={() => {
+                  setOfficialImages([]);
+                  setSelectedImageIndex(0);
+                  setSelectedSource("all");
+                }}
+                className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-border hover:border-primary/50 transition-all"
+              >
+                <img 
+                  src={imagePreview} 
+                  alt="Your photo"
+                  className="w-full h-full object-cover opacity-60"
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="productDescription">Description</Label>
-                <textarea
-                  id="productDescription"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Enter product description"
-                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-none h-20 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="productPrice">Price (₦)</Label>
-                  <Input
-                    id="productPrice"
-                    type="number"
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
-                    placeholder="0"
-                    min="0"
-                  />
+                <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                  <Image className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <div>
-                  <Label htmlFor="productBrand">Brand</Label>
-                  <Input
-                    id="productBrand"
-                    value={editBrand}
-                    onChange={(e) => setEditBrand(e.target.value)}
-                    placeholder="Brand name"
-                  />
-                </div>
-              </div>
+              </button>
+            )}
+          </div>
+        )}
 
-              {/* Category Selection */}
-              <div className="space-y-3">
-                <Label>Category</Label>
-                
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setUseNewCategory(false)}
-                    className={`flex-1 py-2 px-3 text-sm rounded-lg border transition-colors ${
-                      !useNewCategory 
-                        ? 'border-primary bg-primary/10 text-primary' 
-                        : 'border-border text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    Existing Category
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUseNewCategory(true)}
-                    className={`flex-1 py-2 px-3 text-sm rounded-lg border transition-colors ${
-                      useNewCategory 
-                        ? 'border-primary bg-primary/10 text-primary' 
-                        : 'border-border text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    New Category
-                  </button>
-                </div>
-
-                {useNewCategory ? (
-                  <Input
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    placeholder="Enter new category name"
-                  />
-                ) : (
-                  <select
-                    value={selectedCategoryId}
-                    onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Select a category</option>
-                    {categories?.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button variant="outline" className="flex-1" onClick={resetState}>
-                Scan Again
-              </Button>
-              <Button className="flex-1" onClick={addProduct} disabled={!editName.trim()}>
-                <span className="material-symbols-outlined mr-2 text-lg">add</span>
-                Add Product
-              </Button>
+        {/* No images state */}
+        {officialImages.length === 0 && imagePreview && (
+          <div className="p-3 rounded-xl bg-muted/50 border border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Image className="w-4 h-4" />
+              <span>Using your uploaded photo</span>
             </div>
           </div>
         )}
+
+        {/* Product Details Form */}
+        <div className="space-y-4 pt-2">
+          <div>
+            <Label htmlFor="productName" className="text-sm font-medium">Product Name</Label>
+            <Input
+              id="productName"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Enter product name"
+              className="mt-1.5"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="productDescription" className="text-sm font-medium">Description</Label>
+            <textarea
+              id="productDescription"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Enter product description"
+              className="mt-1.5 w-full px-3 py-2 border border-input rounded-lg text-sm bg-background resize-none h-20 focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="productPrice" className="text-sm font-medium">Price (₦)</Label>
+              <Input
+                id="productPrice"
+                type="number"
+                value={editPrice}
+                onChange={(e) => setEditPrice(e.target.value)}
+                placeholder="0"
+                min="0"
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="productBrand" className="text-sm font-medium">Brand</Label>
+              <Input
+                id="productBrand"
+                value={editBrand}
+                onChange={(e) => setEditBrand(e.target.value)}
+                placeholder="Brand name"
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          {/* Category Selection */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Category</Label>
+            
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setUseNewCategory(false)}
+                className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-all ${
+                  !useNewCategory 
+                    ? 'border-primary bg-primary/10 text-primary' 
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Existing
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseNewCategory(true)}
+                className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-all ${
+                  useNewCategory 
+                    ? 'border-primary bg-primary/10 text-primary' 
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                New Category
+              </button>
+            </div>
+
+            {useNewCategory ? (
+              <Input
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                placeholder="Enter new category name"
+              />
+            ) : (
+              <select
+                value={selectedCategoryId}
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Select a category</option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="p-4 border-t border-border flex gap-3 flex-shrink-0">
+        <Button variant="outline" className="flex-1" onClick={resetState}>
+          <RotateCcw className="w-4 h-4 mr-2" />
+          Scan Again
+        </Button>
+        <Button className="flex-1" onClick={addProduct} disabled={!editName.trim() || isScanning}>
+          {isScanning ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Plus className="w-4 h-4 mr-2" />
+          )}
+          Add Product
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        {!showCamera && !imagePreview && !productPreview && renderCaptureView()}
+        {showCamera && renderCameraView()}
+        {isScanning && renderScanningView()}
+        {productPreview && !isScanning && renderProductView()}
       </DialogContent>
     </Dialog>
   );
