@@ -39,9 +39,9 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    // Strategy 1: Google Images search (most accurate for official product images)
-    console.log("Strategy 1: Searching Google Images...");
-    const googleQuery = `${brandPrefix}${productName} official product image`;
+    // Google-only search for official product images
+    console.log("Searching Google for official product images...");
+    const googleQuery = `${brandPrefix}${productName} official product image high resolution`;
     
     try {
       const googleImages = await searchWithFirecrawl(
@@ -57,45 +57,23 @@ serve(async (req) => {
       console.error("Google search failed:", err);
     }
 
-    // Strategy 2: Retailer-specific search (Amazon, Jumia)
+    // If not enough images, try a more specific search
     if (images.length < 5) {
-      console.log("Strategy 2: Searching retailer sites...");
-      const retailerQuery = `${brandPrefix}${productName} site:amazon.com OR site:jumia.com.ng OR site:ebay.com`;
+      console.log("Trying alternative Google search...");
+      const altQuery = `${brandPrefix}${productName} product photo png OR jpg`;
       
       try {
-        const retailerImages = await searchWithFirecrawl(
+        const altImages = await searchWithFirecrawl(
           FIRECRAWL_API_KEY,
-          retailerQuery,
+          altQuery,
           productName,
           brand,
           seenUrls
         );
-        images.push(...retailerImages);
-        console.log(`Found ${retailerImages.length} images from retailer search`);
+        images.push(...altImages);
+        console.log(`Found ${altImages.length} additional images from alternative search`);
       } catch (err) {
-        console.error("Retailer search failed:", err);
-      }
-    }
-
-    // Strategy 3: Brand official site search
-    if (images.length < 5 && brand) {
-      console.log("Strategy 3: Searching brand official site...");
-      const brandQuery = `${productName} site:${brand.toLowerCase().replace(/\s+/g, '')}.com`;
-      
-      try {
-        const brandImages = await searchWithFirecrawl(
-          FIRECRAWL_API_KEY,
-          brandQuery,
-          productName,
-          brand,
-          seenUrls
-        );
-        // Mark brand site images as high confidence
-        brandImages.forEach(img => img.confidence = "high");
-        images.push(...brandImages);
-        console.log(`Found ${brandImages.length} images from brand site search`);
-      } catch (err) {
-        console.error("Brand site search failed:", err);
+        console.error("Alternative search failed:", err);
       }
     }
 
