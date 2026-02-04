@@ -120,10 +120,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         images: topImages,
-        sources: {
-          googleCSE: images.filter(i => i.source.includes("Google") || i.source === "Jumia" || i.source === "Amazon").length,
-          firecrawl: images.filter(i => i.source === "Firecrawl").length,
-        }
+        totalFound: topImages.length,
+        highConfidenceCount
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
