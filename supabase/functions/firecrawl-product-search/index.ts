@@ -28,15 +28,11 @@ serve(async (req) => {
 
     const GOOGLE_SEARCH_API_KEY = Deno.env.get("GOOGLE_SEARCH_API_KEY");
     const GOOGLE_SEARCH_ENGINE_ID = Deno.env.get("GOOGLE_SEARCH_ENGINE_ID");
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
-    const hasGoogleSearch = GOOGLE_SEARCH_API_KEY && GOOGLE_SEARCH_ENGINE_ID;
-    const hasFirecrawl = !!FIRECRAWL_API_KEY;
-
-    if (!hasGoogleSearch && !hasFirecrawl) {
-      console.error("No search API configured (neither Google Custom Search nor Firecrawl)");
+    if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
+      console.error("Google Custom Search API not configured");
       return new Response(
-        JSON.stringify({ error: "No search API configured", images: [] }),
+        JSON.stringify({ error: "Google Custom Search API not configured", images: [] }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -45,91 +41,66 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    // PRIMARY: Use Google Custom Search API (more accurate for product images)
-    if (hasGoogleSearch) {
-      console.log("Using Google Custom Search API (primary)...");
-      
-      // Search 1: Exact product name for official images
-      const query1 = `"${productName}" ${brand || ""} official product image`.trim();
-      console.log(`Search 1 (exact name): "${query1}"`);
+    console.log("Using Google Custom Search API...");
+    
+    // Search 1: Exact product name for official images
+    const query1 = `"${productName}" ${brand || ""} official product image`.trim();
+    console.log(`Search 1 (exact name): "${query1}"`);
+    
+    try {
+      const googleImages1 = await searchWithGoogleCSE(
+        GOOGLE_SEARCH_API_KEY,
+        GOOGLE_SEARCH_ENGINE_ID,
+        query1,
+        productName,
+        brand,
+        seenUrls
+      );
+      images.push(...googleImages1);
+      console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+    } catch (err) {
+      console.error("Google CSE search 1 failed:", err);
+    }
+
+    // Search 2: Brand + product for more coverage
+    if (images.length < 5) {
+      const query2 = `${brandPrefix}${productName} product`.trim();
+      console.log(`Search 2 (brand + name): "${query2}"`);
       
       try {
-        const googleImages1 = await searchWithGoogleCSE(
-          GOOGLE_SEARCH_API_KEY!,
-          GOOGLE_SEARCH_ENGINE_ID!,
-          query1,
+        const googleImages2 = await searchWithGoogleCSE(
+          GOOGLE_SEARCH_API_KEY,
+          GOOGLE_SEARCH_ENGINE_ID,
+          query2,
           productName,
           brand,
           seenUrls
         );
-        images.push(...googleImages1);
-        console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+        images.push(...googleImages2);
+        console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
       } catch (err) {
-        console.error("Google CSE search 1 failed:", err);
-      }
-
-      // Search 2: Brand + product for more coverage
-      if (images.length < 5) {
-        const query2 = `${brandPrefix}${productName}`.trim();
-        console.log(`Search 2 (brand + name): "${query2}"`);
-        
-        try {
-          const googleImages2 = await searchWithGoogleCSE(
-            GOOGLE_SEARCH_API_KEY!,
-            GOOGLE_SEARCH_ENGINE_ID!,
-            query2,
-            productName,
-            brand,
-            seenUrls
-          );
-          images.push(...googleImages2);
-          console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
-        } catch (err) {
-          console.error("Google CSE search 2 failed:", err);
-        }
-      }
-
-      // Search 3: Product name on retailer sites
-      if (images.length < 5) {
-        const query3 = `${productName} site:jumia.com.ng OR site:amazon.com`;
-        console.log(`Search 3 (retailer sites): "${query3}"`);
-        
-        try {
-          const googleImages3 = await searchWithGoogleCSE(
-            GOOGLE_SEARCH_API_KEY!,
-            GOOGLE_SEARCH_ENGINE_ID!,
-            query3,
-            productName,
-            brand,
-            seenUrls
-          );
-          images.push(...googleImages3);
-          console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
-        } catch (err) {
-          console.error("Google CSE search 3 failed:", err);
-        }
+        console.error("Google CSE search 2 failed:", err);
       }
     }
 
-    // FALLBACK: Use Firecrawl if Google CSE didn't find enough images
-    if (hasFirecrawl && images.length < 3) {
-      console.log("Using Firecrawl as fallback...");
-      
-      const firecrawlQuery = `${brandPrefix}${productName} product image site:jumia.com.ng OR site:amazon.com`;
+    // Search 3: Simple product name search
+    if (images.length < 5) {
+      const query3 = `${productName} product photo`;
+      console.log(`Search 3 (simple): "${query3}"`);
       
       try {
-        const firecrawlImages = await searchWithFirecrawl(
-          FIRECRAWL_API_KEY!,
-          firecrawlQuery,
+        const googleImages3 = await searchWithGoogleCSE(
+          GOOGLE_SEARCH_API_KEY,
+          GOOGLE_SEARCH_ENGINE_ID,
+          query3,
           productName,
           brand,
-          seenUrls,
-          "Firecrawl"
+          seenUrls
         );
-        images.push(...firecrawlImages);
-        console.log(`Found ${firecrawlImages.length} images from Firecrawl fallback`);
+        images.push(...googleImages3);
+        console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
       } catch (err) {
-        console.error("Firecrawl fallback failed:", err);
+        console.error("Google CSE search 3 failed:", err);
       }
     }
 
@@ -149,10 +120,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         images: topImages,
-        sources: {
-          googleCSE: images.filter(i => i.source.includes("Google") || i.source === "Jumia" || i.source === "Amazon").length,
-          firecrawl: images.filter(i => i.source === "Firecrawl").length,
-        }
+        totalFound: topImages.length,
+        highConfidenceCount
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -216,94 +185,6 @@ async function searchWithGoogleCSE(
   return images;
 }
 
-async function searchWithFirecrawl(
-  apiKey: string,
-  query: string,
-  productName: string,
-  brand: string | null,
-  seenUrls: Set<string>,
-  defaultSource: string = "Web"
-): Promise<ImageResult[]> {
-  const images: ImageResult[] = [];
-
-  const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query,
-      limit: 15,
-      scrapeOptions: {
-        formats: ["markdown", "links"],
-        waitFor: 3000,
-      },
-    }),
-  });
-
-  if (!searchResponse.ok) {
-    const errorText = await searchResponse.text();
-    console.error("Firecrawl search error:", searchResponse.status, errorText);
-    throw new Error(`Firecrawl search failed: ${searchResponse.status}`);
-  }
-
-  const searchData = await searchResponse.json();
-  const results = searchData.data || [];
-
-  for (const result of results) {
-    if (!result.markdown) continue;
-
-    // Extract images from markdown syntax: ![alt](url)
-    const markdownImageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    let match;
-    
-    while ((match = markdownImageRegex.exec(result.markdown)) !== null) {
-      const altText = match[1].toLowerCase();
-      const imageUrl = match[2];
-      
-      if (seenUrls.has(imageUrl)) continue;
-      if (!isValidProductImageUrl(imageUrl)) continue;
-      if (isLikelyUnrelatedImage(imageUrl, altText)) continue;
-      
-      // Check minimum image quality indicators
-      if (!hasMinimumQuality(imageUrl)) continue;
-      
-      seenUrls.add(imageUrl);
-      
-      const source = extractSource(result.url || imageUrl, defaultSource);
-      const confidence = determineConfidence(imageUrl, altText, productName, brand, result.url);
-      
-      images.push({ url: imageUrl, source, confidence });
-      
-      if (images.length >= 8) break;
-    }
-
-    // Also extract direct image URLs
-    const directImageRegex = /(https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?)/gi;
-    while ((match = directImageRegex.exec(result.markdown)) !== null) {
-      const imageUrl = match[1];
-      
-      if (seenUrls.has(imageUrl)) continue;
-      if (!isValidProductImageUrl(imageUrl)) continue;
-      if (isLikelyUnrelatedImage(imageUrl, "")) continue;
-      if (!hasMinimumQuality(imageUrl)) continue;
-      
-      seenUrls.add(imageUrl);
-      
-      const source = extractSource(result.url || imageUrl, defaultSource);
-      const confidence = determineConfidence(imageUrl, "", productName, brand, result.url);
-      
-      images.push({ url: imageUrl, source, confidence });
-      
-      if (images.length >= 8) break;
-    }
-
-    if (images.length >= 8) break;
-  }
-
-  return images;
-}
 
 // Check if image URL suggests minimum quality (not thumbnails, not tiny)
 function hasMinimumQuality(url: string): boolean {
