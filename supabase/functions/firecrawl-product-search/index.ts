@@ -41,91 +41,66 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    // PRIMARY: Use Google Custom Search API (more accurate for product images)
-    if (hasGoogleSearch) {
-      console.log("Using Google Custom Search API (primary)...");
-      
-      // Search 1: Exact product name for official images
-      const query1 = `"${productName}" ${brand || ""} official product image`.trim();
-      console.log(`Search 1 (exact name): "${query1}"`);
+    console.log("Using Google Custom Search API...");
+    
+    // Search 1: Exact product name for official images
+    const query1 = `"${productName}" ${brand || ""} official product image`.trim();
+    console.log(`Search 1 (exact name): "${query1}"`);
+    
+    try {
+      const googleImages1 = await searchWithGoogleCSE(
+        GOOGLE_SEARCH_API_KEY,
+        GOOGLE_SEARCH_ENGINE_ID,
+        query1,
+        productName,
+        brand,
+        seenUrls
+      );
+      images.push(...googleImages1);
+      console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+    } catch (err) {
+      console.error("Google CSE search 1 failed:", err);
+    }
+
+    // Search 2: Brand + product for more coverage
+    if (images.length < 5) {
+      const query2 = `${brandPrefix}${productName} product`.trim();
+      console.log(`Search 2 (brand + name): "${query2}"`);
       
       try {
-        const googleImages1 = await searchWithGoogleCSE(
-          GOOGLE_SEARCH_API_KEY!,
-          GOOGLE_SEARCH_ENGINE_ID!,
-          query1,
+        const googleImages2 = await searchWithGoogleCSE(
+          GOOGLE_SEARCH_API_KEY,
+          GOOGLE_SEARCH_ENGINE_ID,
+          query2,
           productName,
           brand,
           seenUrls
         );
-        images.push(...googleImages1);
-        console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+        images.push(...googleImages2);
+        console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
       } catch (err) {
-        console.error("Google CSE search 1 failed:", err);
-      }
-
-      // Search 2: Brand + product for more coverage
-      if (images.length < 5) {
-        const query2 = `${brandPrefix}${productName}`.trim();
-        console.log(`Search 2 (brand + name): "${query2}"`);
-        
-        try {
-          const googleImages2 = await searchWithGoogleCSE(
-            GOOGLE_SEARCH_API_KEY!,
-            GOOGLE_SEARCH_ENGINE_ID!,
-            query2,
-            productName,
-            brand,
-            seenUrls
-          );
-          images.push(...googleImages2);
-          console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
-        } catch (err) {
-          console.error("Google CSE search 2 failed:", err);
-        }
-      }
-
-      // Search 3: Product name on retailer sites
-      if (images.length < 5) {
-        const query3 = `${productName} site:jumia.com.ng OR site:amazon.com`;
-        console.log(`Search 3 (retailer sites): "${query3}"`);
-        
-        try {
-          const googleImages3 = await searchWithGoogleCSE(
-            GOOGLE_SEARCH_API_KEY!,
-            GOOGLE_SEARCH_ENGINE_ID!,
-            query3,
-            productName,
-            brand,
-            seenUrls
-          );
-          images.push(...googleImages3);
-          console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
-        } catch (err) {
-          console.error("Google CSE search 3 failed:", err);
-        }
+        console.error("Google CSE search 2 failed:", err);
       }
     }
 
-    // FALLBACK: Use Firecrawl if Google CSE didn't find enough images
-    if (hasFirecrawl && images.length < 3) {
-      console.log("Using Firecrawl as fallback...");
-      
-      const firecrawlQuery = `${brandPrefix}${productName} product image site:jumia.com.ng OR site:amazon.com`;
+    // Search 3: Simple product name search
+    if (images.length < 5) {
+      const query3 = `${productName} product photo`;
+      console.log(`Search 3 (simple): "${query3}"`);
       
       try {
-        const firecrawlImages = await searchWithFirecrawl(
-          FIRECRAWL_API_KEY!,
-          firecrawlQuery,
+        const googleImages3 = await searchWithGoogleCSE(
+          GOOGLE_SEARCH_API_KEY,
+          GOOGLE_SEARCH_ENGINE_ID,
+          query3,
           productName,
           brand,
-          seenUrls,
-          "Firecrawl"
+          seenUrls
         );
-        images.push(...firecrawlImages);
-        console.log(`Found ${firecrawlImages.length} images from Firecrawl fallback`);
+        images.push(...googleImages3);
+        console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
       } catch (err) {
-        console.error("Firecrawl fallback failed:", err);
+        console.error("Google CSE search 3 failed:", err);
       }
     }
 
