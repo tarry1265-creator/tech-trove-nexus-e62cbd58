@@ -15,6 +15,7 @@ import Cart from "./pages/Cart";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import Repair from "./pages/Repair";
 import Orders from "./pages/Orders";
 import Admin from "./pages/Admin";
