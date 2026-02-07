@@ -11,7 +11,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user, loading } = useAuth();
   const { toast } = useToast();
-  
+
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -19,7 +19,6 @@ const Login = () => {
   const [fullName, setFullName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
       navigate("/home");
@@ -141,41 +140,46 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      {/* Left Panel - Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-24">
-        <div className="max-w-md mx-auto w-full">
-          {/* Logo */}
-          <button onClick={() => navigate("/")} className="flex items-center gap-2.5 mb-10">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <button onClick={() => navigate("/")} className="inline-flex items-center gap-2.5 mb-4">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <span className="material-symbols-outlined text-primary-foreground text-xl">memory</span>
             </div>
             <span className="text-2xl font-bold text-foreground">BRAINHUB</span>
           </button>
-
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-            {activeTab === "signin" ? "Welcome back" : "Create account"}
+          <h1 className="text-xl font-bold text-foreground">
+            {activeTab === "signin" ? "Welcome back" : "Create your account"}
           </h1>
-          <p className="text-muted-foreground mb-8">
-            {activeTab === "signin" ? "Sign in to continue shopping" : "Join us for exclusive offers"}
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeTab === "signin"
+              ? "Sign in to continue shopping"
+              : "Join us for exclusive deals & offers"}
           </p>
+        </div>
 
+        {/* Card */}
+        <div className="bg-card border border-border rounded-2xl p-6">
           {/* Tabs */}
-          <div className="flex gap-2 p-1 bg-muted rounded-lg mb-8">
+          <div className="flex gap-1 p-1 bg-muted rounded-lg mb-6">
             <button
               onClick={() => setActiveTab("signin")}
-              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "signin" 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
+              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+                activeTab === "signin"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Sign In
             </button>
             <button
               onClick={() => setActiveTab("signup")}
-              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "signup" 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
+              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+                activeTab === "signup"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Sign Up
@@ -187,32 +191,39 @@ const Login = () => {
             {activeTab === "signup" && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="input-field"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground text-[20px]">person</span>
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    className="input-field pl-10"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
               </div>
             )}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Email Address</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                className="input-field"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground text-[20px]">mail</span>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="input-field pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
               <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground text-[20px]">lock</span>
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="input-field pr-12"
+                  className="input-field pl-10 pr-12"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -239,7 +250,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full btn-primary py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting
                 ? "Please wait..."
@@ -250,27 +261,22 @@ const Login = () => {
           </form>
 
           {activeTab === "signup" && (
-            <p className="text-xs text-muted-foreground text-center mt-6">
+            <p className="text-xs text-muted-foreground text-center mt-5">
               By creating an account, you agree to our Terms of Service and Privacy Policy.
             </p>
           )}
         </div>
-      </div>
 
-      {/* Right Panel - Visual (Desktop only) */}
-      <div className="hidden lg:flex flex-1 bg-primary p-8">
-        <div className="w-full h-full rounded-2xl overflow-hidden relative flex items-center justify-center">
-          <img
-            src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=1200&fit=crop"
-            alt="Premium Headphones"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-primary/60" />
-          <div className="absolute bottom-10 left-10 right-10">
-            <h2 className="text-3xl font-bold text-primary-foreground mb-2">Premium Tech Experience</h2>
-            <p className="text-primary-foreground/80">Discover the best gadgets for your lifestyle.</p>
-          </div>
-        </div>
+        {/* Footer */}
+        <p className="text-xs text-muted-foreground text-center mt-6">
+          {activeTab === "signin" ? "Don't have an account? " : "Already have an account? "}
+          <button
+            onClick={() => setActiveTab(activeTab === "signin" ? "signup" : "signin")}
+            className="text-primary font-medium hover:underline"
+          >
+            {activeTab === "signin" ? "Sign Up" : "Sign In"}
+          </button>
+        </p>
       </div>
     </div>
   );
