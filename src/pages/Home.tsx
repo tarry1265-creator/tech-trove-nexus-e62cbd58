@@ -59,7 +59,6 @@ const Home = () => {
         <section className="mb-8">
           <div className="flex items-center justify-between px-2 py-3 rounded-xl bg-muted/50 overflow-x-auto gap-4">
             {[
-              { icon: "local_shipping", label: "Free Delivery" },
               { icon: "verified_user", label: "100% Genuine" },
               { icon: "build", label: "Repair Services" },
               { icon: "support_agent", label: "24/7 Support" },
