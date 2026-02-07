@@ -3,12 +3,25 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { formatPrice } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import CheckoutShippingForm from "@/components/checkout/CheckoutShippingForm";
+import CheckoutOrderSummary from "@/components/checkout/CheckoutOrderSummary";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart } = useCart();
-  const [activePayment, setActivePayment] = useState("card");
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [shippingInfo, setShippingInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+  });
+
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = 2500;
   const total = subtotal + shipping;
@@ -27,18 +40,60 @@ const Checkout = () => {
     );
   }
 
-  const paymentMethods = [
-    { id: "card", icon: "credit_card", label: "Card Payment", desc: "Pay with Visa, Mastercard, or Verve" },
-    { id: "bank", icon: "account_balance", label: "Bank Transfer", desc: "Direct bank transfer" },
-    { id: "delivery", icon: "local_shipping", label: "Pay on Delivery", desc: "Cash on delivery" },
-  ];
+  const handleShippingChange = (field: string, value: string) => {
+    setShippingInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePlaceOrder = async () => {
+    // Validate shipping info
+    if (!shippingInfo.firstName || !shippingInfo.lastName || !shippingInfo.phone || !shippingInfo.address || !shippingInfo.city || !shippingInfo.state) {
+      toast.error("Please fill in all shipping details");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          items: cart.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image_url: item.image_url,
+            brand: item.brand,
+          })),
+          shippingInfo: {
+            name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+            email: shippingInfo.email,
+            phone: shippingInfo.phone,
+            address: shippingInfo.address,
+            city: shippingInfo.city,
+            state: shippingInfo.state,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error(err.message || "Failed to start checkout. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Layout showBottomNav={false}>
       <div className="content-container py-6 lg:py-10">
         {/* Back Button */}
-        <button 
-          onClick={() => navigate("/cart")} 
+        <button
+          onClick={() => navigate("/cart")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <span className="material-symbols-outlined text-xl">arrow_back</span>
@@ -51,153 +106,25 @@ const Checkout = () => {
           <p className="text-muted-foreground mt-1">Complete your order</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-2">
-          {[
-            { num: 1, label: "Shipping" },
-            { num: 2, label: "Payment" },
-            { num: 3, label: "Confirm" },
-          ].map((step, i) => (
-            <div key={step.num} className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
-                step.num === 1 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {step.num}
-              </div>
-              <span className={`text-sm font-medium whitespace-nowrap ${
-                step.num === 1 ? "text-foreground" : "text-muted-foreground"
-              }`}>
-                {step.label}
-              </span>
-              {i < 2 && (
-                <div className="w-12 h-px bg-border hidden sm:block" />
-              )}
-            </div>
-          ))}
-        </div>
-
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Forms */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Shipping Section */}
-            <div className="card p-5 lg:p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Shipping Address</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">First Name</label>
-                  <input placeholder="John" className="input-field" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Last Name</label>
-                  <input placeholder="Doe" className="input-field" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-                  <input type="email" placeholder="john@example.com" className="input-field" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Phone Number</label>
-                  <input placeholder="+234 800 000 0000" className="input-field" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Address</label>
-                  <input placeholder="123 Main Street" className="input-field" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">City</label>
-                  <input placeholder="Lagos" className="input-field" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">State</label>
-                  <input placeholder="Lagos State" className="input-field" />
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Section */}
-            <div className="card p-5 lg:p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Payment Method</h2>
-              <div className="space-y-3">
-                {paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-all ${
-                      activePayment === method.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={method.id}
-                      checked={activePayment === method.id}
-                      onChange={() => setActivePayment(method.id)}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span className="material-symbols-outlined text-muted-foreground">{method.icon}</span>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{method.label}</p>
-                      <p className="text-sm text-muted-foreground">{method.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+          {/* Left Column - Shipping Form */}
+          <div className="lg:col-span-2">
+            <CheckoutShippingForm
+              shippingInfo={shippingInfo}
+              onChange={handleShippingChange}
+            />
           </div>
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="card p-5 lg:p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Order Summary</h2>
-              
-              {/* Items */}
-              <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                {cart.map(item => (
-                  <div key={item.id} className="flex gap-3">
-                    <img 
-                      src={item.image_url} 
-                      alt={item.name} 
-                      className="w-14 h-14 rounded-lg object-cover bg-muted flex-shrink-0" 
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground truncate">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                    </div>
-                    <span className="text-sm font-semibold text-foreground">{formatPrice(item.price * item.quantity)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Totals */}
-              <div className="space-y-3 border-t border-border pt-4 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="text-foreground">{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-foreground">{formatPrice(shipping)}</span>
-                </div>
-                <div className="flex justify-between text-base font-semibold pt-2 border-t border-border">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-foreground">{formatPrice(total)}</span>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => alert("Order placed! (Demo)")} 
-                className="w-full btn-primary py-3"
-              >
-                Place Order
-              </button>
-
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                By placing this order, you agree to our Terms & Conditions
-              </p>
-            </div>
+            <CheckoutOrderSummary
+              cart={cart}
+              subtotal={subtotal}
+              shipping={shipping}
+              total={total}
+              isLoading={isLoading}
+              onPlaceOrder={handlePlaceOrder}
+            />
           </div>
         </div>
       </div>
