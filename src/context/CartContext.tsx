@@ -12,6 +12,7 @@ interface CartContextType {
     addToCart: (product: Product, quantity?: number) => void;
     removeFromCart: (productId: string) => void;
     updateQuantity: (productId: string, delta: number) => void;
+    clearCart: () => void;
     cartCount: number;
 }
 
