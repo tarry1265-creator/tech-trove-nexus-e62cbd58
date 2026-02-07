@@ -26,13 +26,12 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_SEARCH_API_KEY = Deno.env.get("GOOGLE_SEARCH_API_KEY");
-    const GOOGLE_SEARCH_ENGINE_ID = Deno.env.get("GOOGLE_SEARCH_ENGINE_ID");
+    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
-    if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
-      console.error("Google Custom Search API not configured");
+    if (!FIRECRAWL_API_KEY) {
+      console.error("FIRECRAWL_API_KEY not configured");
       return new Response(
-        JSON.stringify({ error: "Google Custom Search API not configured", images: [] }),
+        JSON.stringify({ error: "Firecrawl API not configured", images: [] }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -41,83 +40,46 @@ serve(async (req) => {
     const images: ImageResult[] = [];
     const seenUrls = new Set<string>();
 
-    console.log("Using Google Custom Search API...");
-    
+    console.log("Using Firecrawl Search API for product images...");
+
     // Search 1: Exact product name for official images
-    const query1 = `"${productName}" ${brand || ""} official product image`.trim();
-    console.log(`Search 1 (exact name): "${query1}"`);
-    
+    const query1 = `${brandPrefix}${productName} official product image`;
+    console.log(`Search 1: "${query1}"`);
+
     try {
-      const googleImages1 = await searchWithGoogleCSE(
-        GOOGLE_SEARCH_API_KEY,
-        GOOGLE_SEARCH_ENGINE_ID,
-        query1,
-        productName,
-        brand,
-        seenUrls
-      );
-      images.push(...googleImages1);
-      console.log(`Found ${googleImages1.length} images from Google CSE search 1`);
+      const results1 = await searchWithFirecrawl(FIRECRAWL_API_KEY, query1, productName, brand, seenUrls);
+      images.push(...results1);
+      console.log(`Found ${results1.length} images from search 1`);
     } catch (err) {
-      console.error("Google CSE search 1 failed:", err);
+      console.error("Search 1 failed:", err);
     }
 
-    // Search 2: Brand + product for more coverage
+    // Search 2: Product on e-commerce sites
     if (images.length < 5) {
-      const query2 = `${brandPrefix}${productName} product`.trim();
-      console.log(`Search 2 (brand + name): "${query2}"`);
-      
+      const query2 = `${brandPrefix}${productName} buy online`;
+      console.log(`Search 2: "${query2}"`);
+
       try {
-        const googleImages2 = await searchWithGoogleCSE(
-          GOOGLE_SEARCH_API_KEY,
-          GOOGLE_SEARCH_ENGINE_ID,
-          query2,
-          productName,
-          brand,
-          seenUrls
-        );
-        images.push(...googleImages2);
-        console.log(`Found ${googleImages2.length} images from Google CSE search 2`);
+        const results2 = await searchWithFirecrawl(FIRECRAWL_API_KEY, query2, productName, brand, seenUrls);
+        images.push(...results2);
+        console.log(`Found ${results2.length} images from search 2`);
       } catch (err) {
-        console.error("Google CSE search 2 failed:", err);
+        console.error("Search 2 failed:", err);
       }
     }
 
-    // Search 3: Simple product name search
-    if (images.length < 5) {
-      const query3 = `${productName} product photo`;
-      console.log(`Search 3 (simple): "${query3}"`);
-      
-      try {
-        const googleImages3 = await searchWithGoogleCSE(
-          GOOGLE_SEARCH_API_KEY,
-          GOOGLE_SEARCH_ENGINE_ID,
-          query3,
-          productName,
-          brand,
-          seenUrls
-        );
-        images.push(...googleImages3);
-        console.log(`Found ${googleImages3.length} images from Google CSE search 3`);
-      } catch (err) {
-        console.error("Google CSE search 3 failed:", err);
-      }
-    }
-
-    // Sort by confidence (high first, then medium, then low)
+    // Sort by confidence
     images.sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 };
       return order[a.confidence] - order[b.confidence];
     });
 
-    // Limit to top 10 images
     const topImages = images.slice(0, 10);
-
     const highConfidenceCount = topImages.filter(i => i.confidence === "high").length;
     console.log(`Total: Found ${topImages.length} product images (${highConfidenceCount} high confidence)`);
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         images: topImages,
         totalFound: topImages.length,
@@ -135,107 +97,84 @@ serve(async (req) => {
   }
 });
 
-// Google Custom Search API for image search
-async function searchWithGoogleCSE(
+async function searchWithFirecrawl(
   apiKey: string,
-  searchEngineId: string,
   query: string,
   productName: string,
   brand: string | null,
   seenUrls: Set<string>
 ): Promise<ImageResult[]> {
   const images: ImageResult[] = [];
-  
-  const params = new URLSearchParams({
-    key: apiKey,
-    cx: searchEngineId,
-    q: query,
-    searchType: "image",
-    num: "10",
-    imgSize: "large",
-    safe: "active",
+
+  const response = await fetch("https://api.firecrawl.dev/v1/search", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      limit: 10,
+      scrapeOptions: {
+        formats: ["links", "markdown"],
+      },
+    }),
   });
 
-  const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`);
-  
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Google CSE error:", response.status, errorText);
-    throw new Error(`Google CSE failed: ${response.status}`);
+    console.error("Firecrawl search error:", response.status, errorText);
+    throw new Error(`Firecrawl search failed: ${response.status}`);
   }
 
   const data = await response.json();
-  const items = data.items || [];
+  const results = data.data || [];
 
-  for (const item of items) {
-    const imageUrl = item.link;
-    
-    if (!imageUrl || seenUrls.has(imageUrl)) continue;
-    if (!isValidProductImageUrl(imageUrl)) continue;
-    if (isLikelyUnrelatedImage(imageUrl, item.title || "")) continue;
-    
-    seenUrls.add(imageUrl);
-    
-    const source = extractSource(item.displayLink || imageUrl, "Google");
-    const confidence = determineConfidence(imageUrl, item.title || "", productName, brand, item.displayLink);
-    
-    images.push({ url: imageUrl, source, confidence });
+  for (const result of results) {
+    // Extract image URLs from the markdown content
+    const markdown = result.markdown || "";
+    const imgRegex = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
+    let match;
+
+    while ((match = imgRegex.exec(markdown)) !== null) {
+      const imageUrl = match[1];
+      if (!imageUrl || seenUrls.has(imageUrl)) continue;
+      if (!isValidProductImageUrl(imageUrl)) continue;
+      if (isLikelyUnrelatedImage(imageUrl)) continue;
+
+      seenUrls.add(imageUrl);
+      const source = extractSource(result.url || imageUrl);
+      const confidence = determineConfidence(imageUrl, result.title || "", productName, brand, result.url);
+      images.push({ url: imageUrl, source, confidence });
+    }
+
+    // Also check for og:image or main images in metadata-like patterns
+    const srcRegex = /(?:src|href)=["'](https?:\/\/[^\s"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
+    while ((match = srcRegex.exec(markdown)) !== null) {
+      const imageUrl = match[1];
+      if (!imageUrl || seenUrls.has(imageUrl)) continue;
+      if (!isValidProductImageUrl(imageUrl)) continue;
+      if (isLikelyUnrelatedImage(imageUrl)) continue;
+
+      seenUrls.add(imageUrl);
+      const source = extractSource(result.url || imageUrl);
+      const confidence = determineConfidence(imageUrl, result.title || "", productName, brand, result.url);
+      images.push({ url: imageUrl, source, confidence });
+    }
   }
 
   return images;
 }
 
-
-// Check if image URL suggests minimum quality (not thumbnails, not tiny)
-function hasMinimumQuality(url: string): boolean {
-  const urlLower = url.toLowerCase();
-  
-  // Reject known small/thumbnail patterns
-  const lowQualityPatterns = [
-    /[_-]thumb/i,
-    /[_-]small/i,
-    /[_-]tiny/i,
-    /\/thumb\//i,
-    /\/thumbnails?\//i,
-    /[_-](\d{2,3})x(\d{2,3})\./i, // dimensions like _50x50. or _120x120.
-    /\?.*w=\d{1,2}(&|$)/i, // query params like ?w=50
-    /\?.*width=\d{1,2}(&|$)/i,
-    /\/s\d{2,3}\//i, // paths like /s50/ or /s120/
-  ];
-  
-  if (lowQualityPatterns.some(pattern => pattern.test(urlLower))) {
-    return false;
-  }
-  
-  // Prefer known high-quality patterns
-  const highQualityPatterns = [
-    /_SL\d{3,4}/i, // Amazon high-res _SL1500
-    /_AC_SL/i, // Amazon AC sizing
-    /\/large\//i,
-    /\/original\//i,
-    /\/full\//i,
-    /-large\./i,
-    /-original\./i,
-    /[_-]\d{3,4}x\d{3,4}\./i, // dimensions like _500x500. or -1000x1000.
-  ];
-  
-  // Boost confidence for high-quality patterns (not a hard requirement)
-  return true;
-}
-
 function isValidProductImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    
-    // Must be HTTPS for security
     if (parsed.protocol !== "https:") return false;
-    
-    // Check for common image CDN and product image patterns
+
     const validPatterns = [
       /\.(jpg|jpeg|png|webp)(\?|$)/i,
       /images?\.amazon\./i,
       /m\.media-amazon\./i,
-      /images\.unsplash\./i,
       /cdn\./i,
       /cloudfront\./i,
       /img\./i,
@@ -245,25 +184,20 @@ function isValidProductImageUrl(url: string): boolean {
       /product/i,
       /catalog/i,
     ];
-    
+
     return validPatterns.some(pattern => pattern.test(url));
   } catch {
     return false;
   }
 }
 
-function isLikelyUnrelatedImage(url: string, altText: string): boolean {
-  const urlLower = url.toLowerCase();
-  const altLower = altText.toLowerCase();
-  
-  // Skip common non-product images
+function isLikelyUnrelatedImage(url: string): boolean {
   const unrelatedPatterns = [
     /[_\/\-]icon[_\/\-.]/i,
     /[_\/\-]avatar[_\/\-.]/i,
     /[_\/\-]logo[_\/\-.]/i,
     /favicon/i,
     /[_\/\-]banner[_\/\-.]/i,
-    /[_\/\-]ad[_\/\-.]/i,
     /sponsor/i,
     /[_\/\-]badge[_\/\-.]/i,
     /[_\/\-]rating[_\/\-.]/i,
@@ -272,114 +206,69 @@ function isLikelyUnrelatedImage(url: string, altText: string): boolean {
     /checkout/i,
     /payment/i,
     /visa|mastercard|paypal|verve/i,
-    /shipping/i,
-    /delivery/i,
     /\.gif$/i,
     /\.svg$/i,
     /placeholder/i,
-    /loading/i,
     /spinner/i,
-    /profile/i,
-    /user[_\/\-]/i,
-    /social/i,
     /facebook|twitter|instagram|linkedin|whatsapp/i,
     /arrow|chevron|caret/i,
     /close|menu|hamburger/i,
-    /\d{2}x\d{2}\./i, // Very small dimensions like 50x50.
+    /\d{2}x\d{2}\./i,
     /btn[_\/\-]/i,
     /button/i,
-    /share/i,
-    /wishlist/i,
-    /compare/i,
-    /notification/i,
-    /alert/i,
-    /warning/i,
-    /error/i,
-    /success/i,
-    /info[_\/\-.]/i,
-    /help/i,
-    /question/i,
-    /search[_\/\-.]/i,
-    /filter/i,
-    /sort/i,
-    /grid/i,
-    /list[_\/\-.]/i,
-    /view[_\/\-.]/i,
-    /zoom/i,
-    /play/i,
-    /video/i,
-    /youtube/i,
-    /vimeo/i,
   ];
-  
-  const combinedText = urlLower + " " + altLower;
-  return unrelatedPatterns.some(pattern => pattern.test(combinedText));
+
+  return unrelatedPatterns.some(pattern => pattern.test(url));
 }
 
-function extractSource(url: string, defaultSource: string = "Web"): string {
+function extractSource(url: string): string {
   try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname.toLowerCase();
-    
+    const hostname = new URL(url).hostname.toLowerCase();
     if (hostname.includes("jumia")) return "Jumia";
     if (hostname.includes("amazon")) return "Amazon";
-    if (hostname.includes("google")) return "Google";
     if (hostname.includes("ebay")) return "eBay";
     if (hostname.includes("walmart")) return "Walmart";
     if (hostname.includes("aliexpress")) return "AliExpress";
     if (hostname.includes("konga")) return "Konga";
     if (hostname.includes("slot")) return "Slot";
-    
-    // Return the default source passed in (Google or Jumia based on search)
-    return defaultSource;
+    return "Web";
   } catch {
-    return defaultSource;
+    return "Web";
   }
 }
 
 function determineConfidence(
-  imageUrl: string, 
-  altText: string,
-  productName: string, 
+  imageUrl: string,
+  title: string,
+  productName: string,
   brand: string | null,
   sourceUrl?: string
 ): "high" | "medium" | "low" {
   const urlLower = imageUrl.toLowerCase();
-  const altLower = altText.toLowerCase();
+  const titleLower = title.toLowerCase();
   const nameLower = productName.toLowerCase();
   const brandLower = brand?.toLowerCase() || "";
   const sourceLower = sourceUrl?.toLowerCase() || "";
 
-  // High confidence indicators
   const highConfidencePatterns = [
-    // Product name words in URL or alt text
-    nameLower.split(/\s+/).some(word => 
-      word.length > 3 && (urlLower.includes(word) || altLower.includes(word))
+    nameLower.split(/\s+/).some(word =>
+      word.length > 3 && (urlLower.includes(word) || titleLower.includes(word))
     ),
-    // Brand name in URL
     brandLower && urlLower.includes(brandLower.replace(/\s+/g, "")),
-    // Amazon high-res product images
     urlLower.includes("amazon") && (urlLower.includes("_AC_SL") || urlLower.includes("_AC_UL")),
-    // Official brand site
     brandLower && sourceLower.includes(brandLower.replace(/\s+/g, "")),
-    // Large image indicators
     /_SL1[0-9]{3}|_UL1[0-9]{3}/i.test(urlLower),
   ];
 
-  if (highConfidencePatterns.some(Boolean)) {
-    return "high";
-  }
+  if (highConfidencePatterns.some(Boolean)) return "high";
 
-  // Medium confidence: from known retailers or CDNs
   const mediumConfidencePatterns = [
     /amazon|jumia|ebay|walmart|aliexpress|bestbuy/i.test(urlLower),
     /cdn|cloudfront|static|media|assets/i.test(urlLower),
     /product|catalog|item/i.test(urlLower),
   ];
 
-  if (mediumConfidencePatterns.some(Boolean)) {
-    return "medium";
-  }
+  if (mediumConfidencePatterns.some(Boolean)) return "medium";
 
   return "low";
 }

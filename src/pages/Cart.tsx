@@ -24,13 +24,11 @@ const Cart = () => {
         </button>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Shopping Cart</h1>
-            <p className="text-muted-foreground mt-1">
-              {cart.length} {cart.length === 1 ? 'item' : 'items'} in your cart
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Shopping Cart</h1>
+          <p className="text-muted-foreground mt-1">
+            {cart.length} {cart.length === 1 ? 'item' : 'items'} in your cart
+          </p>
         </div>
 
         {cart.length === 0 ? (
@@ -43,58 +41,74 @@ const Cart = () => {
             </button>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-3">
               {cart.map((item) => {
                 const stockStatus = getStockStatus(item.stock_quantity);
-                
+
                 return (
-                  <div key={item.id} className="flex gap-4 p-4 card">
-                    <img 
-                      src={item.image_url} 
-                      alt={item.name} 
-                      className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg object-cover bg-muted flex-shrink-0" 
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">{item.brand}</p>
-                          <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-                          {stockStatus.type === 'low' && (
-                            <p className="text-xs text-warning mt-1 flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[14px]">warning</span>
-                              {stockStatus.message}
+                  <div key={item.id} className="card p-3 sm:p-4">
+                    <div className="flex gap-3 sm:gap-4">
+                      {/* Image - fixed size */}
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-lg object-cover bg-muted flex-shrink-0"
+                      />
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        {/* Top Row: Name + Remove */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider">
+                              {item.brand}
                             </p>
-                          )}
-                          {stockStatus.type === 'out' && (
-                            <p className="text-xs text-destructive mt-1">Out of stock</p>
-                          )}
-                        </div>
-                        <button 
-                          onClick={() => removeFromCart(item.id)} 
-                          className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1 rounded-lg hover:bg-muted flex-shrink-0"
-                        >
-                          <span className="material-symbols-outlined text-xl">close</span>
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center border border-border rounded-lg overflow-hidden">
-                          <button 
-                            onClick={() => updateQuantity(item.id, -1)} 
-                            className="px-3 py-1.5 hover:bg-muted transition-colors text-foreground"
+                            <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 leading-tight">
+                              {item.name}
+                            </h3>
+                            {stockStatus.type === 'low' && (
+                              <p className="text-xs text-warning mt-0.5 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[12px]">warning</span>
+                                {stockStatus.message}
+                              </p>
+                            )}
+                            {stockStatus.type === 'out' && (
+                              <p className="text-xs text-destructive mt-0.5">Out of stock</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1 rounded-lg hover:bg-muted flex-shrink-0"
                           >
-                            <span className="material-symbols-outlined text-lg">remove</span>
-                          </button>
-                          <span className="px-4 py-1.5 font-medium text-foreground min-w-[40px] text-center">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(item.id, 1)} 
-                            className="px-3 py-1.5 hover:bg-muted transition-colors text-foreground"
-                          >
-                            <span className="material-symbols-outlined text-lg">add</span>
+                            <span className="material-symbols-outlined text-lg">close</span>
                           </button>
                         </div>
-                        <span className="font-bold text-foreground">{formatPrice(item.price * item.quantity)}</span>
+
+                        {/* Bottom Row: Quantity + Price */}
+                        <div className="flex items-center justify-between mt-auto pt-2">
+                          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="px-2.5 sm:px-3 py-1 hover:bg-muted transition-colors text-foreground"
+                            >
+                              <span className="material-symbols-outlined text-base">remove</span>
+                            </button>
+                            <span className="px-2.5 sm:px-4 py-1 font-medium text-foreground text-sm min-w-[32px] text-center">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="px-2.5 sm:px-3 py-1 hover:bg-muted transition-colors text-foreground"
+                            >
+                              <span className="material-symbols-outlined text-base">add</span>
+                            </button>
+                          </div>
+                          <span className="text-sm sm:text-base font-bold text-foreground">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -120,14 +134,14 @@ const Cart = () => {
                     <span className="text-foreground">{formatPrice(total)}</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => navigate("/checkout")} 
+                <button
+                  onClick={() => navigate("/checkout")}
                   className="w-full btn-primary py-3"
                 >
                   Proceed to Checkout
                 </button>
-                <button 
-                  onClick={() => navigate("/products")} 
+                <button
+                  onClick={() => navigate("/products")}
                   className="w-full btn-ghost py-2.5 mt-2 text-sm"
                 >
                   Continue Shopping

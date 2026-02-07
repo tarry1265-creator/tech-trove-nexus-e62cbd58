@@ -37,61 +37,57 @@ const Home = () => {
   const displayProducts = activeCategory === "all" ? featuredProducts : filteredProducts;
   const isDisplayLoading = activeCategory === "all" ? featuredLoading : filteredLoading;
 
+  const trustBadges = [
+    { icon: "local_shipping", label: "Free Delivery", sub: "On orders above ₦50k" },
+    { icon: "verified_user", label: "Genuine Products", sub: "100% authentic" },
+    { icon: "build", label: "Repair Services", sub: "Expert technicians" },
+    { icon: "support_agent", label: "24/7 Support", sub: "Always here to help" },
+  ];
+
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-2xl bg-primary mb-10">
-          <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-10">
-            {/* Left: Content */}
-            <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 w-fit px-3 py-1.5 mb-4 bg-primary-foreground/15 text-primary-foreground text-xs font-semibold uppercase tracking-wider rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse" />
-                New Collection
-              </span>
-              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-primary-foreground leading-tight mb-4">
-                Premium Tech <br className="hidden sm:block" />& Gadgets
-              </h1>
-              <p className="text-primary-foreground/80 text-base lg:text-lg mb-6 max-w-md">
-                Quality gadgets, trusted repairs, and unbeatable prices. Your one-stop tech destination.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => navigate("/products")}
-                  className="px-6 py-3 bg-primary-foreground text-primary font-semibold rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Shop Now
-                </button>
-                <button
-                  onClick={() => navigate("/repair")}
-                  className="px-6 py-3 border border-primary-foreground/30 text-primary-foreground font-medium rounded-lg hover:bg-primary-foreground/10 transition-colors"
-                >
-                  Repair Services
-                </button>
-              </div>
-            </div>
+        {/* Hero Section - Clean & Minimal */}
+        <section className="mb-10">
+          {/* Search Bar */}
+          <div className="mb-8">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
+              What are you looking for?
+            </h1>
+            <p className="text-muted-foreground text-sm mb-4">
+              Browse gadgets, accessories & more
+            </p>
+            <button
+              onClick={() => navigate("/search")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-muted border border-border text-muted-foreground hover:border-primary/30 transition-colors"
+            >
+              <span className="material-symbols-outlined text-xl">search</span>
+              <span className="text-sm">Search products, brands...</span>
+            </button>
+          </div>
 
-            {/* Right: Featured Image */}
-            <div className="hidden lg:flex items-center justify-center">
-              {products[0] ? (
-                <div className="relative rounded-xl overflow-hidden bg-primary-foreground/10 p-4">
-                  <img
-                    src={products[0].image_url}
-                    alt="Featured Product"
-                    className="w-full max-w-xs h-auto object-cover rounded-lg"
-                  />
+          {/* Trust Badges */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {trustBadges.map((badge) => (
+              <div
+                key={badge.label}
+                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary text-xl">{badge.icon}</span>
                 </div>
-              ) : (
-                <div className="w-full max-w-xs h-64 rounded-xl bg-primary-foreground/10 animate-pulse" />
-              )}
-            </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{badge.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{badge.sub}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Categories */}
         <section className="mb-10">
           <div className="flex items-center gap-2">
-            {/* Left Arrow - Desktop only */}
             <button
               onClick={() => scrollCategories('left')}
               className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full border border-border bg-card items-center justify-center hover:bg-muted transition-colors"
@@ -100,8 +96,7 @@ const Home = () => {
               <span className="material-symbols-outlined text-lg">chevron_left</span>
             </button>
 
-            {/* Scrollable Categories */}
-            <div 
+            <div
               ref={categoryScrollRef}
               className="flex gap-2 overflow-x-auto pb-2 flex-1"
             >
@@ -120,7 +115,6 @@ const Home = () => {
               ))}
             </div>
 
-            {/* Right Arrow - Desktop only */}
             <button
               onClick={() => scrollCategories('right')}
               className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full border border-border bg-card items-center justify-center hover:bg-muted transition-colors"
