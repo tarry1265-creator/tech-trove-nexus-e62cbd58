@@ -3,6 +3,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useState } from "react";
+import logo from "@/assets/logo.png";
 
 const DesktopNav = () => {
   const navigate = useNavigate();
@@ -33,14 +34,9 @@ const DesktopNav = () => {
           {/* Logo */}
           <button
             onClick={() => navigate("/home")}
-            className="flex items-center gap-2.5"
+            className="flex items-center"
           >
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary-foreground text-xl">memory</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              BRAINHUB
-            </span>
+            <img src={logo} alt="BrainHub Tech" className="h-10 w-auto" />
           </button>
 
           {/* Nav Links */}
