@@ -1,85 +1,109 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import ProductCard from "@/components/ProductCard";
-import { useSearchProducts } from "@/hooks/useProducts";
+import { useSearchProducts, useFeaturedProducts, formatPrice } from "@/hooks/useProducts";
 
 const Search = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  
   const { data: results = [], isLoading } = useSearchProducts(query);
+  const { data: popularProducts = [] } = useFeaturedProducts();
 
   return (
     <Layout>
-      <div className="content-container py-6 lg:py-10">
-        {/* Back to Home Button */}
-        <button
-          onClick={() => navigate("/home")}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
-          <span className="text-sm font-medium">Back to Home</span>
-        </button>
+      <div className="content-container py-4 lg:py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => navigate(-1)} className="text-foreground">
+            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+          </button>
+          <h1 className="text-lg font-bold text-foreground flex-1 text-center">Search</h1>
+          <div className="w-[22px]" />
+        </div>
 
-        <div className="card p-6 mb-8">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Search</h1>
-              <p className="text-muted-foreground mt-1">Find products, brands, and more.</p>
-            </div>
-            <button
-              onClick={() => navigate("/products")}
-              className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-sm font-medium"
-            >
-              Browse all
-            </button>
-          </div>
-          <div className="relative mt-6">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground">search</span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products, brands..."
-              className="input-field pl-12 text-lg"
-              autoFocus
-            />
-          </div>
+        {/* Search Input */}
+        <div className="relative mb-8">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search product name"
+            className="input-field pr-12"
+            autoFocus
+          />
+          <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+          </button>
         </div>
 
         {query.length >= 2 ? (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground">
-                {isLoading ? "Searching..." : `${results.length} results for "${query}"`}
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              {isLoading ? "Searching..." : `${results.length} results for "${query}"`}
+            </p>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : results.length > 0 ? (
+              <div className="space-y-3">
+                {results.map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => navigate(`/product/${product.slug}`)}
+                    className="w-full flex items-center gap-4 p-3 rounded-2xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-16 h-16 rounded-xl object-cover bg-muted flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{product.brand} • {product.rating || "4.0"} <span className="text-warning">★</span></p>
+                      <p className="text-sm font-bold text-price mt-1">{formatPrice(product.price)}</p>
+                    </div>
+                  </button>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-                {results.map((product) => (
-                  <ProductCard key={product.id} {...product} />
-                ))}
-              </div>
-            )}
-            {!isLoading && results.length === 0 && (
-              <div className="card p-10 text-center mt-8">
-                <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">search_off</span>
+              <div className="text-center py-16">
+                <span className="material-symbols-outlined text-5xl text-muted-foreground mb-3">search_off</span>
                 <p className="text-muted-foreground">No products found</p>
               </div>
             )}
           </>
         ) : (
-          <div className="card p-10 text-center">
-            <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">search</span>
-            <p className="text-muted-foreground">Start typing to search products</p>
-          </div>
+          <>
+            {/* Popular products section */}
+            {popularProducts.length > 0 && (
+              <section>
+                <h2 className="section-title mb-4">What people are searching for</h2>
+                <div className="space-y-3">
+                  {popularProducts.slice(0, 5).map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => navigate(`/product/${product.slug}`)}
+                      className="w-full flex items-center gap-4 p-3 rounded-2xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-16 h-16 rounded-xl object-cover bg-muted flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">{product.brand} • {product.rating || "4.3"} <span className="text-warning">★</span></p>
+                        <p className="text-sm font-bold text-price mt-1">{formatPrice(product.price)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </Layout>
