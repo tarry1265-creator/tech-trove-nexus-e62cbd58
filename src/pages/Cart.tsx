@@ -8,145 +8,112 @@ const Cart = () => {
   const { cart, removeFromCart, updateQuantity } = useCart();
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 0;
-  const total = subtotal + shipping;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <Layout>
-      <div className="content-container py-6 lg:py-10">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate("/home")}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
-          <span className="text-sm font-medium">Back to Home</span>
-        </button>
-
+      <div className="content-container py-4 lg:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Shopping Cart</h1>
-          <p className="text-muted-foreground mt-1">
-            {cart.length} {cart.length === 1 ? 'item' : 'items'} in your cart
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate(-1)} className="text-foreground">
+              <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+            </button>
+            <h1 className="text-xl font-bold text-foreground">Your Cart</h1>
+          </div>
+          <span className="text-sm text-muted-foreground">{totalItems} items</span>
         </div>
 
         {cart.length === 0 ? (
-          <div className="card p-10 text-center">
-            <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">shopping_cart</span>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">Add some products to get started</p>
-            <button onClick={() => navigate("/products")} className="btn-primary">
-              Browse Products
-            </button>
+          <div className="text-center py-20">
+            <span className="material-symbols-outlined text-5xl text-muted-foreground mb-4">shopping_cart</span>
+            <h2 className="text-lg font-semibold text-foreground mb-2">Your cart is empty</h2>
+            <p className="text-sm text-muted-foreground mb-6">Add some products to get started</p>
+            <button onClick={() => navigate("/products")} className="btn-primary">Browse Products</button>
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-3">
-              {cart.map((item) => {
-                const stockStatus = getStockStatus(item.stock_quantity);
-
-                return (
-                  <div key={item.id} className="card p-3 sm:p-4">
-                    <div className="flex gap-3 sm:gap-4">
-                      {/* Image - fixed size */}
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-lg object-cover bg-muted flex-shrink-0"
-                      />
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 flex flex-col">
-                        {/* Top Row: Name + Remove */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider">
-                              {item.brand}
-                            </p>
-                            <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 leading-tight">
-                              {item.name}
-                            </h3>
-                            {stockStatus.type === 'low' && (
-                              <p className="text-xs text-warning mt-0.5 flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[12px]">warning</span>
-                                {stockStatus.message}
-                              </p>
-                            )}
-                            {stockStatus.type === 'out' && (
-                              <p className="text-xs text-destructive mt-0.5">Out of stock</p>
-                            )}
-                          </div>
+              {cart.map((item) => (
+                <div key={item.id} className="card p-4">
+                  <div className="flex gap-4">
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="w-20 h-20 rounded-xl object-cover bg-muted flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-tight mb-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-sm font-bold text-price mb-3">
+                        {formatPrice(item.price)}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-0 border border-border rounded-lg overflow-hidden">
                           <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1 rounded-lg hover:bg-muted flex-shrink-0"
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="px-3 py-1.5 hover:bg-muted transition-colors text-foreground"
                           >
-                            <span className="material-symbols-outlined text-lg">close</span>
+                            <span className="material-symbols-outlined text-sm">remove</span>
+                          </button>
+                          <span className="px-3 py-1.5 text-sm font-medium text-foreground min-w-[32px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="px-3 py-1.5 hover:bg-muted transition-colors text-foreground"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
                           </button>
                         </div>
-
-                        {/* Bottom Row: Quantity + Price */}
-                        <div className="flex items-center justify-between mt-auto pt-2">
-                          <div className="flex items-center border border-border rounded-lg overflow-hidden">
-                            <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="px-2.5 sm:px-3 py-1 hover:bg-muted transition-colors text-foreground"
-                            >
-                              <span className="material-symbols-outlined text-base">remove</span>
-                            </button>
-                            <span className="px-2.5 sm:px-4 py-1 font-medium text-foreground text-sm min-w-[32px] text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="px-2.5 sm:px-3 py-1 hover:bg-muted transition-colors text-foreground"
-                            >
-                              <span className="material-symbols-outlined text-base">add</span>
-                            </button>
-                          </div>
-                          <span className="text-sm sm:text-base font-bold text-foreground">
-                            {formatPrice(item.price * item.quantity)}
-                          </span>
-                        </div>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="card p-5 lg:p-6 sticky top-24">
+            {/* Summary - desktop sidebar */}
+            <div className="lg:col-span-1 hidden lg:block">
+              <div className="card p-6 sticky top-24">
                 <h2 className="text-lg font-semibold text-foreground mb-4">Order Summary</h2>
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground">{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-primary font-medium">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
-                  </div>
-                  <div className="border-t border-border pt-3 flex justify-between text-base font-semibold">
-                    <span className="text-foreground">Total</span>
-                    <span className="text-foreground">{formatPrice(total)}</span>
-                  </div>
+                <div className="flex justify-between text-sm mb-3">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-foreground">{formatPrice(subtotal)}</span>
+                </div>
+                <div className="border-t border-border pt-3 flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span className="text-price">{formatPrice(subtotal)}</span>
                 </div>
                 <button
                   onClick={() => navigate("/checkout")}
-                  className="w-full btn-primary py-3"
+                  className="w-full btn-primary py-3.5 mt-6"
                 >
                   Proceed to Checkout
                 </button>
-                <button
-                  onClick={() => navigate("/products")}
-                  className="w-full btn-ghost py-2.5 mt-2 text-sm"
-                >
-                  Continue Shopping
-                </button>
               </div>
+            </div>
+
+            {/* Mobile bottom bar */}
+            <div className="fixed bottom-20 left-0 right-0 bg-background border-t border-border p-4 lg:hidden z-40">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-lg font-bold text-price">{formatPrice(subtotal)}</span>
+              </div>
+              <button
+                onClick={() => navigate("/checkout")}
+                className="w-full btn-primary py-3.5"
+              >
+                Proceed to Checkout
+              </button>
             </div>
           </div>
         )}

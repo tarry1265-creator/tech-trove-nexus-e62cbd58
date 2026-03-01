@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { useProduct, formatPrice, getStockStatus } from "@/hooks/useProducts";
+import ProductCard from "@/components/ProductCard";
+import { useProduct, useProducts, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ const ProductDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { data: product, isLoading, error } = useProduct(slug);
+  const { data: allProducts = [] } = useProducts();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -22,12 +24,20 @@ const ProductDetails = () => {
     return images;
   }, [product]);
 
+  // Related products from same category
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+    return allProducts
+      .filter(p => p.category_id === product.category_id && p.id !== product.id)
+      .slice(0, 4);
+  }, [allProducts, product]);
+
   if (isLoading) {
     return (
       <Layout>
-        <div className="content-container py-6 lg:py-10">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            <div className="aspect-square rounded-xl bg-muted animate-pulse" />
+        <div className="content-container py-4 lg:py-8">
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="aspect-square rounded-2xl bg-muted animate-pulse" />
             <div className="space-y-4">
               <div className="h-6 w-24 bg-muted rounded animate-pulse" />
               <div className="h-10 w-3/4 bg-muted rounded animate-pulse" />
@@ -43,11 +53,9 @@ const ProductDetails = () => {
     return (
       <Layout>
         <div className="content-container py-20 text-center">
-          <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">error</span>
+          <span className="material-symbols-outlined text-5xl text-muted-foreground mb-4">error</span>
           <p className="text-muted-foreground mb-6">Product not found</p>
-          <button onClick={() => navigate("/products")} className="btn-primary">
-            Browse Products
-          </button>
+          <button onClick={() => navigate("/products")} className="btn-primary">Browse Products</button>
         </div>
       </Layout>
     );
@@ -56,14 +64,6 @@ const ProductDetails = () => {
   const hasMultipleImages = allImages.length > 1;
   const stockStatus = getStockStatus(product.stock_quantity);
   const isOutOfStock = stockStatus.type === 'out';
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-  };
 
   const handleAddToCart = () => {
     if (!isOutOfStock) {
@@ -74,162 +74,138 @@ const ProductDetails = () => {
 
   return (
     <Layout>
-      <div className="content-container py-6 lg:py-10">
-        <button onClick={() => navigate("/home")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
-          <span className="text-sm font-medium">Back to Home</span>
-        </button>
+      <div className="content-container py-4 lg:py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate(-1)} className="text-foreground">
+            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+          </button>
+          <button className="text-foreground">
+            <span className="material-symbols-outlined text-[22px]">share</span>
+          </button>
+        </div>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border">
+          <div className="space-y-3">
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted border border-border">
               <img
                 src={allImages[currentImageIndex]}
-                alt={`${product.name} - Image ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover"
+                alt={product.name}
+                className="w-full h-full object-contain p-4"
               />
-
-              {/* Navigation Arrows */}
+              {/* Dots */}
               {hasMultipleImages && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted transition-colors"
-                  >
-                    <span className="material-symbols-outlined">chevron_left</span>
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted transition-colors"
-                  >
-                    <span className="material-symbols-outlined">chevron_right</span>
-                  </button>
-                </>
-              )}
-
-              {/* Image Counter */}
-              {hasMultipleImages && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background border border-border text-sm font-medium">
-                  {currentImageIndex + 1} / {allImages.length}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                  {allImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`rounded-full transition-all ${
+                        index === currentImageIndex ? "w-5 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Thumbnail Navigation */}
+            {/* Thumbnails */}
             {hasMultipleImages && (
-              <div className="flex gap-3 overflow-x-auto pb-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {allImages.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index
-                      ? 'border-primary'
-                      : 'border-border hover:border-primary/50'
-                      }`}
+                    className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                      currentImageIndex === index ? "border-primary" : "border-border"
+                    }`}
                   >
-                    <img
-                      src={img}
-                      alt={`${product.name} thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Details */}
+          {/* Product Info */}
           <div className="flex flex-col">
-            <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-2">
-              {product.brand || "Brainhub"}
-            </span>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">{product.name}</h1>
-
-            {product.rating && (
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-warning filled">star</span>
-                  <span className="font-semibold">{product.rating}</span>
-                </div>
-                <span className="text-muted-foreground">• {product.category?.name}</span>
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h1 className="text-xl lg:text-2xl font-bold text-foreground leading-tight">{product.name}</h1>
+              <div className="text-right flex-shrink-0">
+                <p className="text-xl lg:text-2xl font-bold text-price">{formatPrice(product.price)}</p>
               </div>
-            )}
+            </div>
 
-            <p className="text-muted-foreground mb-6">{product.description}</p>
-
-            {/* Stock Status */}
-            <div className="mb-6">
-              {isOutOfStock ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
-                  <span className="material-symbols-outlined text-[18px]">cancel</span>
-                  Out of Stock
-                </span>
-              ) : stockStatus.type === 'low' ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-warning/10 text-warning text-sm font-medium">
-                  <span className="material-symbols-outlined text-[18px]">warning</span>
-                  {stockStatus.message}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 text-success text-sm font-medium">
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  In Stock
-                </span>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">{product.brand || "BRAINHUB"}</span>
+              {product.rating && (
+                <>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-sm text-foreground font-medium">{product.rating}</span>
+                  <span className="text-warning text-sm">★★★★★</span>
+                </>
               )}
             </div>
 
-            {/* Price */}
-            <div className="flex items-center gap-4 mb-8">
-              <span className="text-3xl font-bold text-foreground">{formatPrice(product.price)}</span>
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{product.description}</p>
+
+            {/* Stock */}
+            <div className="mb-6">
+              {isOutOfStock ? (
+                <span className="badge badge-destructive">Out of Stock</span>
+              ) : stockStatus.type === 'low' ? (
+                <span className="badge badge-warning">{stockStatus.message}</span>
+              ) : (
+                <span className="badge badge-success">In Stock</span>
+              )}
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex items-center border border-border rounded-lg">
-                <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
-                  className="px-4 py-3 hover:bg-muted rounded-l-lg transition-colors text-foreground"
-                  disabled={isOutOfStock}
-                >
-                  <span className="material-symbols-outlined text-lg">remove</span>
-                </button>
-                <span className="px-4 py-3 font-medium text-foreground min-w-[48px] text-center">{quantity}</span>
-                <button 
-                  onClick={() => setQuantity(quantity + 1)} 
-                  className="px-4 py-3 hover:bg-muted rounded-r-lg transition-colors text-foreground"
-                  disabled={isOutOfStock}
-                >
-                  <span className="material-symbols-outlined text-lg">add</span>
-                </button>
-              </div>
+            {/* Add to Cart - sticky on mobile */}
+            <div className="flex items-center gap-3 mt-auto">
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg font-semibold transition-all ${
-                  isOutOfStock 
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed' 
-                    : 'btn-primary'
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                  isOutOfStock
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98]"
                 }`}
               >
-                <span className="material-symbols-outlined">shopping_bag</span>
-                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                {isOutOfStock ? "Out of Stock" : "Add to cart"}
+              </button>
+              <button className="w-12 h-12 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
+                <span className="material-symbols-outlined text-foreground">favorite</span>
               </button>
             </div>
 
-            {/* Category Info */}
+            {/* Category */}
             {product.category && (
-              <div className="mt-10 pt-8 border-t border-border">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Category</h3>
+              <div className="mt-8 pt-6 border-t border-border">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Category</p>
                 <button
                   onClick={() => navigate(`/products?category=${product.category?.slug}`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-xl hover:bg-muted/80 transition-colors text-sm"
                 >
-                  <span className="material-symbols-outlined text-primary">{product.category.icon || "category"}</span>
-                  <span className="text-foreground">{product.category.name}</span>
+                  <span className="material-symbols-outlined text-primary text-lg">{product.category.icon || "category"}</span>
+                  <span className="text-foreground font-medium">{product.category.name}</span>
                 </button>
               </div>
             )}
           </div>
         </div>
+
+        {/* Related Items */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-12">
+            <h2 className="section-title mb-4">Related items</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {relatedProducts.map((p) => (
+                <ProductCard key={p.id} {...p} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </Layout>
   );

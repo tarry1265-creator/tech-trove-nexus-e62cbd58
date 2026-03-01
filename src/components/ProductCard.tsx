@@ -24,41 +24,43 @@ const ProductCard = (product: ProductCardProps) => {
 
   return (
     <div
-      className="group flex flex-col cursor-pointer card overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/20"
+      className="group flex flex-col cursor-pointer card overflow-hidden transition-all duration-200 hover:shadow-soft"
       onClick={() => navigate(`/product/${product.slug}`)}
     >
-      {/* Image Container */}
+      {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-muted">
         {/* Badges */}
         <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1.5">
           {product.is_new_arrival && (
-            <span className="px-2 py-1 bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-wider rounded">
+            <span className="px-2 py-1 bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-wider rounded-lg">
               New
             </span>
           )}
-          {stockStatus.type === 'low' && (
-            <span className="px-2 py-1 bg-warning text-warning-foreground text-[10px] font-semibold rounded">
-              {stockStatus.message}
-            </span>
-          )}
           {isOutOfStock && (
-            <span className="px-2 py-1 bg-muted-foreground text-background text-[10px] font-semibold rounded">
+            <span className="px-2 py-1 bg-muted-foreground text-background text-[10px] font-semibold rounded-lg">
               Out of stock
             </span>
           )}
         </div>
 
-        {/* Product Image */}
+        {/* Favorite button */}
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-primary/80 flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined text-primary-foreground text-[16px]">favorite</span>
+        </button>
+
         <div
           className={`w-full h-full bg-center bg-cover transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? 'opacity-50' : ''}`}
           style={{ backgroundImage: `url('${product.image_url}')` }}
         />
 
-        {/* Quick Add Button - Always visible on mobile, hover on desktop */}
+        {/* Quick Add */}
         {!isOutOfStock && (
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:opacity-90 shadow-sm"
+            className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
             <span className="hidden sm:inline">Add</span>
@@ -66,27 +68,15 @@ const ProductCard = (product: ProductCardProps) => {
         )}
       </div>
 
-      {/* Product Info */}
-      <div className="p-3 lg:p-4 flex flex-col gap-1">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          {product.brand || "Brainhub"}
-        </p>
+      {/* Info */}
+      <div className="p-3 lg:p-4 flex flex-col gap-0.5">
         <h3 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
           {product.name}
         </h3>
-
-        {/* Rating */}
-        {product.rating && (
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="material-symbols-outlined text-[14px] text-warning filled">star</span>
-            <span className="text-xs font-medium text-foreground">{product.rating}</span>
-          </div>
-        )}
-
-        {/* Price */}
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-base lg:text-lg font-bold text-foreground">{formatPrice(product.price)}</span>
-        </div>
+        <p className="text-[11px] text-muted-foreground">
+          {product.brand || "BRAINHUB"} • {product.rating || "4.0"} <span className="text-warning">★</span>
+        </p>
+        <p className="text-sm font-bold text-price mt-1">{formatPrice(product.price)}</p>
       </div>
     </div>
   );

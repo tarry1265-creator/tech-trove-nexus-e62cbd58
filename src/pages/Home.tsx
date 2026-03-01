@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import HeroSlider from "@/components/HeroSlider";
-import { useProducts, useFeaturedProducts, useNewArrivals, useCategories, useProductsByCategory } from "@/hooks/useProducts";
+import { useProducts, useFeaturedProducts, useNewArrivals, useCategories, useProductsByCategory, formatPrice } from "@/hooks/useProducts";
+import { useAuth } from "@/context/AuthContext";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
@@ -21,16 +23,6 @@ const Home = () => {
     ...categories.map(cat => ({ ...cat, icon: cat.icon || "category" }))
   ], [categories]);
 
-  const scrollCategories = useCallback((direction: 'left' | 'right') => {
-    if (categoryScrollRef.current) {
-      const scrollAmount = 200;
-      categoryScrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  }, []);
-
   const handleCategoryClick = useCallback((slug: string) => {
     setActiveCategory(slug);
   }, []);
@@ -40,91 +32,85 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="content-container py-6 lg:py-10">
-        {/* Search Bar */}
+      <div className="content-container py-4 lg:py-8">
+        {/* Mobile Header: Avatar + Search + Cart */}
+        <div className="flex items-center justify-between mb-5 lg:hidden">
+          <button onClick={() => navigate("/profile")} className="w-10 h-10 rounded-full overflow-hidden border-2 border-border">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <span className="material-symbols-outlined text-muted-foreground text-lg">person</span>
+              </div>
+            )}
+          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate("/search")} className="p-2.5 rounded-xl hover:bg-muted transition-colors text-foreground">
+              <span className="material-symbols-outlined text-[22px]">search</span>
+            </button>
+            <button onClick={() => navigate("/cart")} className="p-2.5 rounded-xl hover:bg-muted transition-colors text-foreground">
+              <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Search Bar */}
         <button
           onClick={() => navigate("/search")}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted border border-border text-muted-foreground hover:border-primary/30 transition-colors mb-5"
+          className="hidden lg:flex w-full items-center gap-3 px-4 py-3 rounded-xl bg-muted border border-border text-muted-foreground hover:border-primary/30 transition-colors mb-6"
         >
           <span className="material-symbols-outlined text-xl">search</span>
           <span className="text-sm">Search products, brands...</span>
         </button>
 
-        {/* Hero Slider */}
-        <section className="mb-6">
+        {/* Hero - "Popular now" */}
+        <section className="mb-8">
+          <h2 className="section-title mb-4">Popular now</h2>
           <HeroSlider products={featuredProducts} isLoading={featuredLoading} />
         </section>
 
-        {/* Trust Strip */}
+        {/* Categories - Horizontal scroll */}
         <section className="mb-8">
-          <div className="flex items-center justify-between px-2 py-3 rounded-xl bg-muted/50 overflow-x-auto gap-4">
-            {[
-              { icon: "verified_user", label: "100% Genuine" },
-              { icon: "build", label: "Repair Services" },
-              { icon: "support_agent", label: "24/7 Support" },
-            ].map((badge) => (
-              <div key={badge.label} className="flex items-center gap-2 flex-shrink-0">
-                <span className="material-symbols-outlined text-primary text-lg">{badge.icon}</span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{badge.label}</span>
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">Categories</h2>
+            <button onClick={() => navigate("/products")} className="text-muted-foreground text-sm font-medium flex items-center gap-0.5 hover:text-foreground transition-colors">
+              See more <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+            </button>
+          </div>
+          <div
+            ref={categoryScrollRef}
+            className="flex gap-3 overflow-x-auto pb-2"
+          >
+            {allCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryClick(category.slug)}
+                className={`flex flex-col items-center gap-2 min-w-[100px] p-3 rounded-2xl transition-all ${activeCategory === category.slug
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[24px]">{category.icon}</span>
+                <span className="text-xs font-medium whitespace-nowrap">{category.name}</span>
+              </button>
             ))}
           </div>
         </section>
 
-        {/* Categories */}
-        <section className="mb-10">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => scrollCategories('left')}
-              className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full border border-border bg-card items-center justify-center hover:bg-muted transition-colors"
-              aria-label="Scroll categories left"
-            >
-              <span className="material-symbols-outlined text-lg">chevron_left</span>
-            </button>
-
-            <div
-              ref={categoryScrollRef}
-              className="flex gap-2 overflow-x-auto pb-2 flex-1"
-            >
-              {allCategories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.slug)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all whitespace-nowrap text-sm font-medium ${activeCategory === category.slug
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
-                  <span>{category.name}</span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => scrollCategories('right')}
-              className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full border border-border bg-card items-center justify-center hover:bg-muted transition-colors"
-              aria-label="Scroll categories right"
-            >
-              <span className="material-symbols-outlined text-lg">chevron_right</span>
-            </button>
-          </div>
-        </section>
-
         {/* Featured/Filtered Products */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">
-              {activeCategory === "all" ? "Featured Products" : allCategories.find(c => c.slug === activeCategory)?.name || "Products"}
+              {activeCategory === "all" ? "Featured" : allCategories.find(c => c.slug === activeCategory)?.name || "Products"}
             </h2>
-            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
-              View All
+            <button onClick={() => navigate("/products")} className="text-muted-foreground text-sm font-medium flex items-center gap-0.5 hover:text-foreground transition-colors">
+              See more <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           {isDisplayLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+                <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
               ))}
             </div>
           ) : displayProducts.length > 0 ? (
@@ -141,24 +127,39 @@ const Home = () => {
           )}
         </section>
 
-        {/* New Arrivals */}
+        {/* New Arrivals - List style */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="section-title">New Arrivals</h2>
-            <button onClick={() => navigate("/products")} className="text-primary text-sm font-medium hover:underline">
-              View All
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">New arrivals</h2>
+            <button onClick={() => navigate("/products")} className="text-muted-foreground text-sm font-medium flex items-center gap-0.5 hover:text-foreground transition-colors">
+              See more <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           {newLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="space-y-3">
               {newProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
+                <button
+                  key={product.id}
+                  onClick={() => navigate(`/product/${product.slug}`)}
+                  className="w-full flex items-center gap-4 p-3 rounded-2xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                >
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-16 h-16 rounded-xl object-cover bg-muted flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{product.brand || "BRAINHUB"} • {product.rating || "4.5"} <span className="text-warning">★</span></p>
+                    <p className="text-sm font-bold text-price mt-1">{formatPrice(product.price)}</p>
+                  </div>
+                </button>
               ))}
             </div>
           )}
