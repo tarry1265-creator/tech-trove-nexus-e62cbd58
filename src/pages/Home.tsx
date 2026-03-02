@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
@@ -8,7 +8,13 @@ import { useAuth } from "@/context/AuthContext";
 
 const Home = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { user, loading, profile } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
   const [activeCategory, setActiveCategory] = useState("all");
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
