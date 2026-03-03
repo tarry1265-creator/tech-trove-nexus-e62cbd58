@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import { useProduct, useProducts, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { toast } from "sonner";
 
 const ProductDetails = () => {
@@ -12,6 +13,7 @@ const ProductDetails = () => {
   const { data: product, isLoading, error } = useProduct(slug);
   const { data: allProducts = [] } = useProducts();
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -174,8 +176,20 @@ const ProductDetails = () => {
               >
                 {isOutOfStock ? "Out of Stock" : "Add to cart"}
               </button>
-              <button className="w-12 h-12 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors">
-                <span className="material-symbols-outlined text-foreground">favorite</span>
+              <button
+                onClick={() => {
+                  toggleWishlist(product.id);
+                  toast.success(isInWishlist(product.id) ? "Removed from wishlist" : "Added to wishlist");
+                }}
+                className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-colors ${
+                  isInWishlist(product.id)
+                    ? "border-destructive bg-destructive/10 text-destructive"
+                    : "border-border hover:bg-muted text-foreground"
+                }`}
+              >
+                <span className="material-symbols-outlined">
+                  {isInWishlist(product.id) ? "favorite" : "favorite_border"}
+                </span>
               </button>
             </div>
 
