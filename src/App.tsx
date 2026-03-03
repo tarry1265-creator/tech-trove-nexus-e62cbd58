@@ -18,6 +18,8 @@ import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Repair from "./pages/Repair";
 import Orders from "./pages/Orders";
+import Wishlist from "./pages/Wishlist";
+import Addresses from "./pages/Addresses";
 import Admin from "./pages/Admin";
 import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
