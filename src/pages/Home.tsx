@@ -33,6 +33,29 @@ const Home = () => {
     setActiveCategory(slug);
   }, []);
 
+  // Hero slider: specific products with transparent PNG hero images
+  const heroSliderSlugs = [
+    "jbl-live-770nc-wireless-over-ear-headphones",
+    "air-f9-max-buds-plus",
+    "hottu-30000mah-22-5w-power-bank",
+    "xbox-360-usb-wired-controller",
+  ];
+  const heroImageMap: Record<string, string> = {
+    "jbl-live-770nc-wireless-over-ear-headphones": "/products/jbl-live-770nc-headphones-hero.png",
+    "air-f9-max-buds-plus": "/products/air-f9-max-buds-hero.png",
+    "hottu-30000mah-22-5w-power-bank": "/products/hottu-power-bank-hero.png",
+    "xbox-360-usb-wired-controller": "/products/xbox-360-controller-hero.png",
+  };
+  const heroSliderProducts = useMemo(() => {
+    return heroSliderSlugs
+      .map(slug => {
+        const p = products.find(pr => pr.slug === slug);
+        if (!p) return null;
+        return { ...p, image_url: heroImageMap[slug] || p.image_url };
+      })
+      .filter(Boolean) as typeof products;
+  }, [products]);
+
   const displayProducts = activeCategory === "all" ? featuredProducts : filteredProducts;
   const isDisplayLoading = activeCategory === "all" ? featuredLoading : filteredLoading;
 
