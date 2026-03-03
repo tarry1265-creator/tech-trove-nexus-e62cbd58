@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Product, formatPrice, getStockStatus } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { toast } from "sonner";
 
 interface ProductCardProps extends Product {
@@ -10,8 +11,10 @@ interface ProductCardProps extends Product {
 const ProductCard = (product: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const stockStatus = getStockStatus(product.stock_quantity);
   const isOutOfStock = stockStatus.type === 'out';
+  const wishlisted = isInWishlist(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -20,6 +23,12 @@ const ProductCard = (product: ProductCardProps) => {
       product.onAddToCart?.();
       toast.success(`${product.name} added to cart`);
     }
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleWishlist(product.id);
+    toast.success(wishlisted ? `Removed from wishlist` : `Added to wishlist`);
   };
 
   return (
@@ -45,10 +54,14 @@ const ProductCard = (product: ProductCardProps) => {
 
         {/* Favorite button */}
         <button
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-primary/80 flex items-center justify-center"
+          onClick={handleToggleWishlist}
+          className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+            wishlisted ? "bg-destructive" : "bg-primary/80"
+          }`}
         >
-          <span className="material-symbols-outlined text-primary-foreground text-[16px]">favorite</span>
+          <span className="material-symbols-outlined text-primary-foreground text-[16px]">
+            {wishlisted ? "favorite" : "favorite_border"}
+          </span>
         </button>
 
         <div
