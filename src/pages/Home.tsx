@@ -72,7 +72,7 @@ const Home = () => {
         {/* Hero - "Popular now" */}
         <section className="mb-8">
           <h2 className="section-title mb-4">Popular now</h2>
-          <HeroSlider products={featuredProducts} isLoading={featuredLoading} />
+          <HeroSlider products={heroSliderProducts} isLoading={productsLoading} />
         </section>
 
         {/* Categories - Horizontal scroll */}
