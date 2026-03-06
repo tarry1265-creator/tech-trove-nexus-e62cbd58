@@ -10,11 +10,6 @@ const Home = () => {
   const navigate = useNavigate();
   const { user, loading, profile } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/", { replace: true });
-    }
-  }, [user, loading, navigate]);
   const [activeCategory, setActiveCategory] = useState("all");
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
