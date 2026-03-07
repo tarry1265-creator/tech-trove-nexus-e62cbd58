@@ -27,12 +27,9 @@ serve(async (req) => {
     logStep("Received items", { count: items.length });
 
     // Calculate total in kobo (Paystack uses kobo for NGN)
-    const subtotal = items.reduce(
-      (sum: number, item: any) => sum + item.price * item.quantity * 100,
-      0
+    const totalAmount = Math.round(
+      items.reduce((sum: number, item: any) => sum + item.price * item.quantity * 100, 0)
     );
-    const shippingCost = 250000; // ₦2,500 in kobo
-    const totalAmount = Math.round(subtotal + shippingCost);
 
     logStep("Calculated total", { totalAmount });
 

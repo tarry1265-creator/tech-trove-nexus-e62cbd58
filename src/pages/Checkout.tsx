@@ -21,8 +21,7 @@ const Checkout = () => {
   });
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 2500;
-  const total = subtotal + shipping;
+  const total = subtotal;
 
   if (cart.length === 0) {
     return (
@@ -184,10 +183,6 @@ const Checkout = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="text-foreground">{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping cost</span>
-                  <span className="text-foreground">{formatPrice(shipping)}</span>
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between font-bold">
                   <span className="text-foreground">Total</span>
