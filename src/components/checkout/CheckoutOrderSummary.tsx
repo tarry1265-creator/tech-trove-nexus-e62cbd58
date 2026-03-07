@@ -78,7 +78,7 @@ const CheckoutOrderSummary = ({
         ) : (
           <>
             <span className="material-symbols-outlined text-lg">lock</span>
-            Pay with Stripe
+            Pay with Paystack
           </>
         )}
       </button>
@@ -86,7 +86,7 @@ const CheckoutOrderSummary = ({
       <div className="flex items-center justify-center gap-2 mt-4">
         <span className="material-symbols-outlined text-muted-foreground text-sm">verified_user</span>
         <p className="text-xs text-muted-foreground">
-          Secured by Stripe. Your payment info is never stored on our servers.
+          Secured by Paystack. Your payment info is never stored on our servers.
         </p>
       </div>
     </div>

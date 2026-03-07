@@ -48,7 +48,9 @@ const Checkout = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      const callbackUrl = `${window.location.origin}/payment-success`;
+
+      const { data, error } = await supabase.functions.invoke("create-paystack-checkout", {
         body: {
           items: cart.map((item) => ({
             id: item.id,
@@ -66,14 +68,15 @@ const Checkout = () => {
             city: shippingInfo.city,
             state: shippingInfo.state,
           },
+          callbackUrl,
         },
       });
 
       if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
+      if (data?.authorization_url) {
+        window.location.href = data.authorization_url;
       } else {
-        throw new Error("No checkout URL returned");
+        throw new Error("No payment URL returned");
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
@@ -161,7 +164,7 @@ const Checkout = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Email (optional)</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Email (for receipt)</label>
                   <input
                     type="email"
                     placeholder="john@example.com"
@@ -203,13 +206,13 @@ const Checkout = () => {
                     Processing...
                   </span>
                 ) : (
-                  `Checkout ${formatPrice(total)}`
+                  `Pay ${formatPrice(total)}`
                 )}
               </button>
 
               <div className="flex items-center justify-center gap-2 mt-4">
                 <span className="material-symbols-outlined text-muted-foreground text-sm">verified_user</span>
-                <p className="text-xs text-muted-foreground">Secured by Stripe</p>
+                <p className="text-xs text-muted-foreground">Secured by Paystack</p>
               </div>
             </div>
           </div>
