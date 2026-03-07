@@ -24,12 +24,20 @@ serve(async (req) => {
 
     const { items, shippingInfo, callbackUrl } = await req.json();
     if (!items || items.length === 0) throw new Error("No items provided");
-    logStep("Received items", { count: items.length });
+    logStep("Received items", { count: items.length, items: items.map((i: any) => ({ name: i.name, price: i.price, quantity: i.quantity })) });
 
     // Calculate total in kobo (Paystack uses kobo for NGN)
     const totalAmount = Math.round(
-      items.reduce((sum: number, item: any) => sum + item.price * item.quantity * 100, 0)
+      items.reduce((sum: number, item: any) => {
+        const price = Number(item.price) || 0;
+        const quantity = Number(item.quantity) || 1;
+        return sum + price * quantity * 100;
+      }, 0)
     );
+
+    if (totalAmount <= 0) {
+      throw new Error(`Invalid total amount: ${totalAmount}. Check item prices.`);
+    }
 
     logStep("Calculated total", { totalAmount });
 
