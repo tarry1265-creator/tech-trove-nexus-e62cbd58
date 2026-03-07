@@ -11,7 +11,6 @@ interface CartItem {
 interface CheckoutOrderSummaryProps {
   cart: CartItem[];
   subtotal: number;
-  shipping: number;
   total: number;
   isLoading: boolean;
   onPlaceOrder: () => void;
@@ -20,7 +19,6 @@ interface CheckoutOrderSummaryProps {
 const CheckoutOrderSummary = ({
   cart,
   subtotal,
-  shipping,
   total,
   isLoading,
   onPlaceOrder,
@@ -54,10 +52,6 @@ const CheckoutOrderSummary = ({
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="text-foreground">{formatPrice(subtotal)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Shipping</span>
-          <span className="text-foreground">{formatPrice(shipping)}</span>
         </div>
         <div className="flex justify-between text-base font-semibold pt-2 border-t border-border">
           <span className="text-foreground">Total</span>
