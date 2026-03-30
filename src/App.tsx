@@ -27,6 +27,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminProducts from "./pages/AdminProducts";
 import AdminPromotions from "./pages/AdminPromotions";
 import AdminAI from "./pages/AdminAI";
+import SecAdmin from "./pages/SecAdmin";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/promotions" element={<AdminPromotions />} />
                 <Route path="/admin/ai" element={<AdminAI />} />
+                <Route path="/secadmin" element={<SecAdmin />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useProducts, useCategories, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
+import { useProducts, useCategories, useUpdateProduct, useDeleteProduct, formatPrice } from "@/hooks/useProducts";
 import { useOrders } from "@/hooks/useOrders";
-import { formatPrice } from "@/hooks/useProducts";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ScanProductModal from "@/components/admin/ScanProductModal";
 import ProductTable from "@/components/admin/ProductTable";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,15 @@ const Admin = () => {
   const { data: products = [], isLoading: productsLoading, refetch } = useProducts();
   const { data: categories = [], refetch: refetchCategories } = useCategories();
   const { data: orders = [] } = useOrders();
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["admin-profiles-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   
@@ -41,6 +51,7 @@ const Admin = () => {
     totalOrders: orders.length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     revenue: orders.reduce((sum, o) => sum + o.total_amount, 0),
+    totalUsers: profiles.length,
   };
 
   // Sort by stock (low stock first) for products view
@@ -111,7 +122,7 @@ const Admin = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 mb-6">
         <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -156,6 +167,18 @@ const Admin = () => {
             <div>
               <div className="stat-value">{stats.outOfStock}</div>
               <div className="stat-label">Out of Stock</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-blue-500">group</span>
+            </div>
+            <div>
+              <div className="stat-value">{stats.totalUsers}</div>
+              <div className="stat-label">Users</div>
             </div>
           </div>
         </div>
