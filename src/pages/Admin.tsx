@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useProducts, useCategories, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
+import { useProducts, useCategories, useUpdateProduct, useDeleteProduct, formatPrice } from "@/hooks/useProducts";
 import { useOrders } from "@/hooks/useOrders";
 import { useQuery } from "@tanstack/react-query";
-import { formatPrice } from "@/hooks/useProducts";
 import { toast } from "sonner";
 import ScanProductModal from "@/components/admin/ScanProductModal";
 import ProductTable from "@/components/admin/ProductTable";
 import { supabase } from "@/integrations/supabase/client";
-import ScanProductModal from "@/components/admin/ScanProductModal";
-import ProductTable from "@/components/admin/ProductTable";
 import {
   AlertDialog,
   AlertDialogAction,
