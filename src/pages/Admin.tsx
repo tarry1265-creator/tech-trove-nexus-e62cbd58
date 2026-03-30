@@ -51,6 +51,7 @@ const Admin = () => {
     totalOrders: orders.length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
     revenue: orders.reduce((sum, o) => sum + o.total_amount, 0),
+    totalUsers: profiles.length,
   };
 
   // Sort by stock (low stock first) for products view
