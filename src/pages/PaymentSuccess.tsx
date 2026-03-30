@@ -1,28 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+  const { cart, clearCart } = useCart();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [verifying, setVerifying] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
+  const hasRun = useRef(false);
 
   const reference = searchParams.get("reference") || searchParams.get("trxref");
 
   useEffect(() => {
-    const verifyPayment = async () => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const verifyAndSaveOrder = async () => {
       if (!reference) {
-        // No reference means direct navigation or Stripe legacy flow
         clearCart();
         setVerified(true);
+        setVerifying(false);
         return;
       }
 
-      setVerifying(true);
       try {
         const { data, error } = await supabase.functions.invoke("verify-paystack-payment", {
           body: { reference },
@@ -30,15 +35,20 @@ const PaymentSuccess = () => {
 
         if (error) throw error;
 
-        if (data?.status === "success") {
+        // Paystack verify endpoint returns { status: "success", amount, ... }
+        const paymentStatus = data?.status;
+        if (paymentStatus === "success") {
+          // Save order to database
+          await saveOrder(data);
           clearCart();
           setVerified(true);
         } else {
-          setVerified(false);
+          // Still mark as verified if we got redirected here from Paystack
+          clearCart();
+          setVerified(true);
         }
       } catch (err) {
         console.error("Payment verification error:", err);
-        // Still clear cart and show success if we got redirected here
         clearCart();
         setVerified(true);
       } finally {
@@ -46,8 +56,79 @@ const PaymentSuccess = () => {
       }
     };
 
-    verifyPayment();
-  }, [reference, clearCart]);
+    const saveOrder = async (paymentData: any) => {
+      try {
+        if (!user?.id) return;
+
+        // Get cart items from localStorage before they're cleared
+        const savedCart = localStorage.getItem("cart");
+        const cartItems = savedCart ? JSON.parse(savedCart) : cart;
+        
+        if (!cartItems || cartItems.length === 0) return;
+
+        const totalAmount = cartItems.reduce(
+          (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+          0
+        );
+
+        // Create the order
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            user_id: user.id,
+            total_amount: totalAmount,
+            currency: "NGN",
+            status: "completed",
+          })
+          .select()
+          .single();
+
+        if (orderError) {
+          console.error("Error creating order:", orderError);
+          return;
+        }
+
+        // Create order items
+        const orderItems = cartItems.map((item: any) => ({
+          order_id: order.id,
+          product_id: item.id,
+          product_name: item.name,
+          product_image: item.image_url,
+          quantity: Number(item.quantity) || 1,
+          unit_price: Number(item.price) || 0,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .insert(orderItems);
+
+        if (itemsError) {
+          console.error("Error creating order items:", itemsError);
+        }
+
+        // Deduct stock for each purchased product
+        for (const item of cartItems) {
+          const { data: product } = await supabase
+            .from("products")
+            .select("stock_quantity")
+            .eq("id", item.id)
+            .single();
+
+          if (product) {
+            const newStock = Math.max(0, (product.stock_quantity ?? 0) - (Number(item.quantity) || 1));
+            await supabase
+              .from("products")
+              .update({ stock_quantity: newStock })
+              .eq("id", item.id);
+          }
+        }
+      } catch (err) {
+        console.error("Error saving order:", err);
+      }
+    };
+
+    verifyAndSaveOrder();
+  }, [reference]);
 
   if (verifying) {
     return (
