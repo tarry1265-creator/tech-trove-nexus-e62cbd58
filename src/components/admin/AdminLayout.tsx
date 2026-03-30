@@ -18,6 +18,7 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
     { icon: "group", label: "Users", path: "/admin/users" },
     { icon: "local_offer", label: "Promotions", path: "/admin/promotions" },
     { icon: "smart_toy", label: "AI Assistant", path: "/admin/ai" },
+    { icon: "point_of_sale", label: "In-Store", path: "/secadmin" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
