@@ -24,6 +24,15 @@ const Admin = () => {
   const { data: products = [], isLoading: productsLoading, refetch } = useProducts();
   const { data: categories = [], refetch: refetchCategories } = useCategories();
   const { data: orders = [] } = useOrders();
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["admin-profiles-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   
