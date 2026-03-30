@@ -7,11 +7,12 @@ import { useAuth } from "@/context/AuthContext";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { cart, clearCart } = useCart();
+  const { clearCart } = useCart();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
+  const [failed, setFailed] = useState(false);
   const hasRun = useRef(false);
 
   const reference = searchParams.get("reference") || searchParams.get("trxref");
@@ -22,54 +23,71 @@ const PaymentSuccess = () => {
 
     const verifyAndSaveOrder = async () => {
       if (!reference) {
-        clearCart();
-        setVerified(true);
+        setFailed(true);
         setVerifying(false);
         return;
       }
 
       try {
+        // Read cart from localStorage BEFORE any clearing
+        const savedCart = localStorage.getItem("cart");
+        const cartItems = savedCart ? JSON.parse(savedCart) : [];
+
+        console.log("[PaymentSuccess] Cart items from localStorage:", cartItems.length);
+        console.log("[PaymentSuccess] Verifying reference:", reference);
+
         const { data, error } = await supabase.functions.invoke("verify-paystack-payment", {
           body: { reference },
         });
 
-        if (error) throw error;
+        console.log("[PaymentSuccess] Verify response:", JSON.stringify(data), "Error:", error);
 
-        // Paystack verify endpoint returns { status: "success", amount, ... }
+        if (error) {
+          console.error("Payment verification error:", error);
+          setFailed(true);
+          setVerifying(false);
+          return;
+        }
+
+        // Paystack returns status "success" for successful payments
         const paymentStatus = data?.status;
+        console.log("[PaymentSuccess] Payment status:", paymentStatus);
+
         if (paymentStatus === "success") {
           // Save order to database
-          await saveOrder(data);
+          await saveOrder(cartItems);
           clearCart();
           setVerified(true);
         } else {
-          // Still mark as verified if we got redirected here from Paystack
-          clearCart();
-          setVerified(true);
+          // Payment was not successful
+          setFailed(true);
         }
       } catch (err) {
         console.error("Payment verification error:", err);
-        clearCart();
-        setVerified(true);
+        setFailed(true);
       } finally {
         setVerifying(false);
       }
     };
 
-    const saveOrder = async (paymentData: any) => {
+    const saveOrder = async (cartItems: any[]) => {
       try {
-        if (!user?.id) return;
+        if (!user?.id) {
+          console.error("[PaymentSuccess] No user ID, cannot save order");
+          return;
+        }
 
-        // Get cart items from localStorage before they're cleared
-        const savedCart = localStorage.getItem("cart");
-        const cartItems = savedCart ? JSON.parse(savedCart) : cart;
-        
-        if (!cartItems || cartItems.length === 0) return;
+        if (!cartItems || cartItems.length === 0) {
+          console.error("[PaymentSuccess] No cart items to save");
+          return;
+        }
 
         const totalAmount = cartItems.reduce(
           (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
           0
         );
+
+        console.log("[PaymentSuccess] Saving order with total:", totalAmount, "items:", cartItems.length);
 
         // Create the order
         const { data: order, error: orderError } = await supabase
@@ -88,6 +106,8 @@ const PaymentSuccess = () => {
           return;
         }
 
+        console.log("[PaymentSuccess] Order created:", order.id);
+
         // Create order items
         const orderItems = cartItems.map((item: any) => ({
           order_id: order.id,
@@ -104,6 +124,8 @@ const PaymentSuccess = () => {
 
         if (itemsError) {
           console.error("Error creating order items:", itemsError);
+        } else {
+          console.log("[PaymentSuccess] Order items created successfully");
         }
 
         // Deduct stock for each purchased product
@@ -128,7 +150,7 @@ const PaymentSuccess = () => {
     };
 
     verifyAndSaveOrder();
-  }, [reference]);
+  }, [reference, user?.id]);
 
   if (verifying) {
     return (
@@ -138,6 +160,37 @@ const PaymentSuccess = () => {
             <span className="material-symbols-outlined text-5xl text-primary animate-spin mb-4">progress_activity</span>
             <h1 className="text-xl font-bold text-foreground mb-2">Verifying Payment...</h1>
             <p className="text-muted-foreground">Please wait while we confirm your payment.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (failed) {
+    return (
+      <Layout showBottomNav={false}>
+        <div className="content-container py-20 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="material-symbols-outlined text-4xl text-destructive">cancel</span>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-3">Payment Unsuccessful</h1>
+            <p className="text-muted-foreground mb-2">
+              Your payment could not be verified. Please try again or contact support.
+            </p>
+            {reference && (
+              <p className="text-xs text-muted-foreground mb-8">
+                Reference: <span className="font-mono">{reference}</span>
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button onClick={() => navigate("/checkout")} className="btn-primary px-6 py-3">
+                Try Again
+              </button>
+              <button onClick={() => navigate("/home")} className="btn-ghost px-6 py-3">
+                Go Home
+              </button>
+            </div>
           </div>
         </div>
       </Layout>
