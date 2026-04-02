@@ -15,14 +15,25 @@ const PaymentSuccess = () => {
   const [failed, setFailed] = useState(false);
   const hasRun = useRef(false);
 
-  const reference = searchParams.get("reference") || searchParams.get("trxref");
+  // Flutterwave returns transaction_id and tx_ref as query params
+  const transactionId = searchParams.get("transaction_id");
+  const txRef = searchParams.get("tx_ref");
+  const flwStatus = searchParams.get("status");
 
   useEffect(() => {
     if (hasRun.current) return;
     hasRun.current = true;
 
     const verifyAndSaveOrder = async () => {
-      if (!reference) {
+      // If Flutterwave returns status=cancelled, fail immediately
+      if (flwStatus === "cancelled") {
+        setFailed(true);
+        setVerifying(false);
+        return;
+      }
+
+      if (!transactionId) {
+        console.error("[PaymentSuccess] No transaction_id in URL");
         setFailed(true);
         setVerifying(false);
         return;
@@ -34,10 +45,10 @@ const PaymentSuccess = () => {
         const cartItems = savedCart ? JSON.parse(savedCart) : [];
 
         console.log("[PaymentSuccess] Cart items from localStorage:", cartItems.length);
-        console.log("[PaymentSuccess] Verifying reference:", reference);
+        console.log("[PaymentSuccess] Verifying transaction_id:", transactionId, "tx_ref:", txRef);
 
-        const { data, error } = await supabase.functions.invoke("verify-paystack-payment", {
-          body: { reference },
+        const { data, error } = await supabase.functions.invoke("verify-flutterwave-payment", {
+          body: { transaction_id: transactionId, tx_ref: txRef },
         });
 
         console.log("[PaymentSuccess] Verify response:", JSON.stringify(data), "Error:", error);
@@ -49,17 +60,14 @@ const PaymentSuccess = () => {
           return;
         }
 
-        // Paystack returns status "success" for successful payments
         const paymentStatus = data?.status;
         console.log("[PaymentSuccess] Payment status:", paymentStatus);
 
         if (paymentStatus === "success") {
-          // Save order to database
           await saveOrder(cartItems);
           clearCart();
           setVerified(true);
         } else {
-          // Payment was not successful
           setFailed(true);
         }
       } catch (err) {
@@ -89,7 +97,6 @@ const PaymentSuccess = () => {
 
         console.log("[PaymentSuccess] Saving order with total:", totalAmount, "items:", cartItems.length);
 
-        // Create the order
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert({
@@ -108,7 +115,6 @@ const PaymentSuccess = () => {
 
         console.log("[PaymentSuccess] Order created:", order.id);
 
-        // Create order items
         const orderItems = cartItems.map((item: any) => ({
           order_id: order.id,
           product_id: item.id,
@@ -128,7 +134,7 @@ const PaymentSuccess = () => {
           console.log("[PaymentSuccess] Order items created successfully");
         }
 
-        // Deduct stock for each purchased product
+        // Deduct stock
         for (const item of cartItems) {
           const { data: product } = await supabase
             .from("products")
@@ -150,7 +156,7 @@ const PaymentSuccess = () => {
     };
 
     verifyAndSaveOrder();
-  }, [reference, user?.id]);
+  }, [transactionId, txRef, user?.id]);
 
   if (verifying) {
     return (
@@ -178,9 +184,9 @@ const PaymentSuccess = () => {
             <p className="text-muted-foreground mb-2">
               Your payment could not be verified. Please try again or contact support.
             </p>
-            {reference && (
+            {txRef && (
               <p className="text-xs text-muted-foreground mb-8">
-                Reference: <span className="font-mono">{reference}</span>
+                Reference: <span className="font-mono">{txRef}</span>
               </p>
             )}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -208,9 +214,9 @@ const PaymentSuccess = () => {
           <p className="text-muted-foreground mb-2">
             Your order has been placed successfully. You'll receive a confirmation email shortly.
           </p>
-          {reference && (
+          {txRef && (
             <p className="text-xs text-muted-foreground mb-8">
-              Reference: <span className="font-mono">{reference}</span>
+              Reference: <span className="font-mono">{txRef}</span>
             </p>
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
