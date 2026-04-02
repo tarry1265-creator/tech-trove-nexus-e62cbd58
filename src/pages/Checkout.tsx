@@ -49,7 +49,7 @@ const Checkout = () => {
     try {
       const callbackUrl = `${window.location.origin}/payment-success`;
 
-      const { data, error } = await supabase.functions.invoke("create-paystack-checkout", {
+      const { data, error } = await supabase.functions.invoke("create-flutterwave-checkout", {
         body: {
           items: cart.map((item) => ({
             id: item.id,
@@ -72,8 +72,8 @@ const Checkout = () => {
       });
 
       if (error) throw error;
-      if (data?.authorization_url) {
-        window.location.href = data.authorization_url;
+      if (data?.payment_link) {
+        window.location.href = data.payment_link;
       } else {
         throw new Error("No payment URL returned");
       }
@@ -207,7 +207,7 @@ const Checkout = () => {
 
               <div className="flex items-center justify-center gap-2 mt-4">
                 <span className="material-symbols-outlined text-muted-foreground text-sm">verified_user</span>
-                <p className="text-xs text-muted-foreground">Secured by Paystack</p>
+                <p className="text-xs text-muted-foreground">Secured by Flutterwave</p>
               </div>
             </div>
           </div>
