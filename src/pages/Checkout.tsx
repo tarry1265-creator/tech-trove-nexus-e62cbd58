@@ -207,7 +207,7 @@ const Checkout = () => {
 
               <div className="flex items-center justify-center gap-2 mt-4">
                 <span className="material-symbols-outlined text-muted-foreground text-sm">verified_user</span>
-                <p className="text-xs text-muted-foreground">Secured by Paystack</p>
+                <p className="text-xs text-muted-foreground">Secured by Flutterwave</p>
               </div>
             </div>
           </div>
