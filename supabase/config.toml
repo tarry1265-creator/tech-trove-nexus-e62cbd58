@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.verify-paystack-payment]
 verify_jwt = false
+
+[functions.create-flutterwave-checkout]
+verify_jwt = false
+
+[functions.verify-flutterwave-payment]
+verify_jwt = false
