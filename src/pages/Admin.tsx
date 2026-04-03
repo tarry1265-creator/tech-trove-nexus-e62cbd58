@@ -171,7 +171,7 @@ const Admin = () => {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/users")}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-blue-500">group</span>

@@ -67,6 +67,29 @@ const PaymentSuccess = () => {
 
         if (paymentStatus === "success") {
           await saveOrder(cartItems);
+          // Send order emails
+          try {
+            const orderItems = cartItems.map((item: any) => ({
+              product_name: item.name,
+              quantity: Number(item.quantity) || 1,
+              unit_price: Number(item.price) || 0,
+            }));
+            const totalAmount = cartItems.reduce(
+              (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+              0
+            );
+            await supabase.functions.invoke("send-order-emails", {
+              body: {
+                customerEmail: user?.email,
+                customerName: user?.email?.split("@")[0],
+                orderItems,
+                orderId: txRef || "unknown",
+                totalAmount,
+              },
+            });
+          } catch (emailErr) {
+            console.error("Failed to send order emails:", emailErr);
+          }
           clearCart();
           setVerified(true);
         } else {

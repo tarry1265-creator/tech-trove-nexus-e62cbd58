@@ -56,6 +56,7 @@ export const useUserOrders = () => {
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "completed")
+        .neq("status", "delivered")
         .order("created_at", { ascending: false });
 
       if (ordersError) throw ordersError;
