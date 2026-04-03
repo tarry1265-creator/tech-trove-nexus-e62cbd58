@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const { clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
@@ -21,6 +21,8 @@ const PaymentSuccess = () => {
   const flwStatus = searchParams.get("status");
 
   useEffect(() => {
+    // Wait for auth to finish loading before verifying
+    if (authLoading) return;
     if (hasRun.current) return;
     hasRun.current = true;
 
@@ -156,7 +158,7 @@ const PaymentSuccess = () => {
     };
 
     verifyAndSaveOrder();
-  }, [transactionId, txRef, user?.id]);
+  }, [transactionId, txRef, user?.id, authLoading]);
 
   if (verifying) {
     return (
