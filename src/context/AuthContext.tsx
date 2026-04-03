@@ -24,6 +24,7 @@ interface AuthContextType {
   updateAvatar: (file: File) => Promise<{ error: Error | null; url?: string }>;
   removeAvatar: () => Promise<{ error: Error | null }>;
   needsUsername: boolean;
+  isBanned: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
