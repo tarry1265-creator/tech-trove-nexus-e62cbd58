@@ -9,6 +9,7 @@ interface Profile {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  is_banned?: boolean;
 }
 
 interface AuthContextType {
@@ -23,6 +24,7 @@ interface AuthContextType {
   updateAvatar: (file: File) => Promise<{ error: Error | null; url?: string }>;
   removeAvatar: () => Promise<{ error: Error | null }>;
   needsUsername: boolean;
+  isBanned: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -226,6 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateAvatar,
         removeAvatar,
         needsUsername,
+        isBanned: profile?.is_banned ?? false,
       }}
     >
       {children}

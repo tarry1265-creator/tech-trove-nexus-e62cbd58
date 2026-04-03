@@ -1,8 +1,13 @@
+import { useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AdminUsers = () => {
+  const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+
   const { data: profiles = [] } = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: async () => {
@@ -15,6 +20,26 @@ const AdminUsers = () => {
     },
     staleTime: 1000 * 60 * 2,
   });
+
+  const toggleBan = useMutation({
+    mutationFn: async ({ userId, ban }: { userId: string; ban: boolean }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_banned: ban } as any)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { ban }) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
+      toast.success(ban ? "User has been banned" : "User has been unbanned");
+    },
+    onError: () => {
+      toast.error("Failed to update user status");
+    },
+  });
+
+  const bannedCount = profiles.filter((p: any) => p.is_banned).length;
+  const activeCount = profiles.length - bannedCount;
 
   return (
     <AdminLayout title="Users" subtitle="Manage customers and access">
@@ -38,7 +63,7 @@ const AdminUsers = () => {
               <span className="material-symbols-outlined text-success">verified</span>
             </div>
             <div>
-              <div className="stat-value">{profiles.length}</div>
+              <div className="stat-value">{activeCount}</div>
               <div className="stat-label">Active</div>
             </div>
           </div>
@@ -50,14 +75,14 @@ const AdminUsers = () => {
               <span className="material-symbols-outlined text-destructive">block</span>
             </div>
             <div>
-              <div className="stat-value">0</div>
+              <div className="stat-value">{bannedCount}</div>
               <div className="stat-label">Banned</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users List */}
       {profiles.length === 0 ? (
         <div className="card p-8 text-center">
           <span className="material-symbols-outlined text-5xl text-muted-foreground mb-3">group</span>
@@ -65,63 +90,97 @@ const AdminUsers = () => {
           <p className="text-muted-foreground text-sm">Users will appear here when they sign up.</p>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-foreground">User</th>
-                  <th className="text-left p-4 text-sm font-semibold text-foreground">Username</th>
-                  <th className="text-left p-4 text-sm font-semibold text-foreground">Joined</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {profiles.map((profile) => (
-                  <tr key={profile.id} className="hover:bg-muted/50">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                          {profile.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="material-symbols-outlined text-primary">person</span>
-                          )}
-                        </div>
-                        <span className="text-sm font-medium text-foreground">{profile.user_id.slice(0, 8)}...</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-foreground">{profile.username || "—"}</td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(profile.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-3">
+          {profiles.map((profile: any) => {
+            const isBanned = profile.is_banned;
+            const isExpanded = selectedUser === profile.id;
 
-          {/* Mobile */}
-          <div className="lg:hidden divide-y divide-border">
-            {profiles.map((profile) => (
-              <div key={profile.id} className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="material-symbols-outlined text-primary">person</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {profile.username || profile.user_id.slice(0, 12) + "..."}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Joined {new Date(profile.created_at).toLocaleDateString()}
-                  </p>
-                </div>
+            return (
+              <div key={profile.id} className={`card overflow-hidden ${isBanned ? "opacity-60" : ""}`}>
+                <button
+                  onClick={() => setSelectedUser(isExpanded ? null : profile.id)}
+                  className="w-full p-4 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-primary">person</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground truncate">
+                          {profile.username || "No username"}
+                        </p>
+                        {isBanned && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive">
+                            BANNED
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Joined {new Date(profile.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="material-symbols-outlined text-muted-foreground">
+                      {isExpanded ? "expand_less" : "expand_more"}
+                    </span>
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="border-t border-border p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs">User ID</p>
+                        <p className="font-mono text-foreground text-xs truncate">{profile.user_id}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Username</p>
+                        <p className="text-foreground">{profile.username || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Joined</p>
+                        <p className="text-foreground">
+                          {new Date(profile.created_at).toLocaleDateString("en-NG", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Status</p>
+                        <p className={isBanned ? "text-destructive font-medium" : "text-green-600 font-medium"}>
+                          {isBanned ? "Banned" : "Active"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        toggleBan.mutate({ userId: profile.user_id, ban: !isBanned })
+                      }
+                      disabled={toggleBan.isPending}
+                      className={`w-full py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50 ${
+                        isBanned
+                          ? "bg-green-600/10 text-green-600 hover:bg-green-600/20"
+                          : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                      }`}
+                    >
+                      {toggleBan.isPending
+                        ? "Updating..."
+                        : isBanned
+                        ? "Unban User"
+                        : "Ban User"}
+                    </button>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </AdminLayout>
