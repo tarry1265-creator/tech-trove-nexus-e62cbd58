@@ -61,6 +61,18 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      // Check ban status after login
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_banned")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
+        .single();
+
+      if (profileData && (profileData as any).is_banned) {
+        setShowBannedModal(true);
+        await signOut();
+        return;
+      }
       navigate("/home");
     }
   };
