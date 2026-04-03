@@ -11,7 +11,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, isBanned, signOut } = useAuth();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<"signin" | "signup">(initialTab as any);
