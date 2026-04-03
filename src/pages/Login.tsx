@@ -220,6 +220,35 @@ const Login = () => {
           )}
         </div>
       </div>
+
+      {/* Banned Modal */}
+      {showBannedModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+          <div className="bg-background rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-destructive text-3xl">block</span>
+              </div>
+              <h2 className="text-xl font-bold text-foreground mb-2">Account Banned</h2>
+              <p className="text-muted-foreground text-sm mb-4">
+                Your account has been suspended. If you believe this is an error, please send an appeal email to:
+              </p>
+              <a
+                href="mailto:Brainhubtek@gmail.com"
+                className="text-primary font-semibold hover:underline"
+              >
+                Brainhubtek@gmail.com
+              </a>
+              <button
+                onClick={() => setShowBannedModal(false)}
+                className="btn-primary w-full mt-6 py-3"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

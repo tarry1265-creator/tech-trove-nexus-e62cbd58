@@ -60,13 +60,14 @@ const App = () => (
                 <Route path="/repair" element={<Repair />} />
                 
                 {/* Admin Routes */}
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/products" element={<AdminProducts />} />
-                <Route path="/admin/orders" element={<AdminOrders />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/promotions" element={<AdminPromotions />} />
-                <Route path="/admin/ai" element={<AdminAI />} />
-                <Route path="/secadmin" element={<SecAdmin />} />
+                <Route path="/admin" element={<AdminPasswordGate><Admin /></AdminPasswordGate>} />
+                <Route path="/admin/products" element={<AdminPasswordGate><AdminProducts /></AdminPasswordGate>} />
+                <Route path="/admin/orders" element={<AdminPasswordGate><AdminOrders /></AdminPasswordGate>} />
+                <Route path="/admin/users" element={<AdminPasswordGate><AdminUsers /></AdminPasswordGate>} />
+                <Route path="/admin/promotions" element={<AdminPasswordGate><AdminPromotions /></AdminPasswordGate>} />
+                <Route path="/admin/ai" element={<AdminPasswordGate><AdminAI /></AdminPasswordGate>} />
+                <Route path="/secadmin" element={<AdminPasswordGate><SecAdmin /></AdminPasswordGate>} />
+                <Route path="/dispatch" element={<Dispatch />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
