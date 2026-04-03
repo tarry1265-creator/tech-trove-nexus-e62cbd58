@@ -24,9 +24,14 @@ const Login = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/home");
+      if (isBanned) {
+        setShowBannedModal(true);
+        signOut();
+      } else {
+        navigate("/home");
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isBanned]);
 
   const validateInputs = () => {
     try { emailSchema.parse(email); } catch {

@@ -228,6 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateAvatar,
         removeAvatar,
         needsUsername,
+        isBanned: profile?.is_banned ?? false,
       }}
     >
       {children}
