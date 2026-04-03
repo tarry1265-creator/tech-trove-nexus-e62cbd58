@@ -20,6 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBannedModal, setShowBannedModal] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
