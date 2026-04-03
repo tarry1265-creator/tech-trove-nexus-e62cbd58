@@ -28,6 +28,8 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminPromotions from "./pages/AdminPromotions";
 import AdminAI from "./pages/AdminAI";
 import SecAdmin from "./pages/SecAdmin";
+import Dispatch from "./pages/Dispatch";
+import AdminPasswordGate from "./components/admin/AdminPasswordGate";
 
 const queryClient = new QueryClient();
 
