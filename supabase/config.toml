@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.verify-flutterwave-payment]
 verify_jwt = false
+
+[functions.send-order-notification]
+verify_jwt = false
+
+[functions.send-order-emails]
+verify_jwt = false

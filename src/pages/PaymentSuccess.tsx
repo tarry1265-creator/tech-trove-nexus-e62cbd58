@@ -78,7 +78,7 @@ const PaymentSuccess = () => {
               (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
               0
             );
-            await supabase.functions.invoke("send-order-emails", {
+            await supabase.functions.invoke("send-order-notification", {
               body: {
                 customerEmail: user?.email,
                 customerName: user?.email?.split("@")[0],
