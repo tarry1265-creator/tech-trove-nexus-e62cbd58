@@ -25,7 +25,7 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 bg-background border-b border-border">
         <div className="flex items-center justify-between h-14 px-4 lg:px-6">
           <div className="flex items-center gap-3">
@@ -44,8 +44,8 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
         </div>
       </header>
 
-      <div className="flex">
-        <aside className="hidden lg:block w-56 border-r border-border min-h-[calc(100vh-56px)] sticky top-14">
+      <div className="flex flex-1 min-h-0">
+        <aside className="hidden lg:block w-56 border-r border-border min-h-0 sticky top-14 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 56px)' }}>
           <nav className="p-3 space-y-1">
             {navItems.map((item) => (
               <button
@@ -64,7 +64,7 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
           </nav>
         </aside>
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-y-auto pb-20 lg:pb-6">
           <div className="p-4 lg:p-6">
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-foreground">{title}</h1>
@@ -76,12 +76,12 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
       </div>
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-        <div className="flex items-center justify-around h-14 px-2">
+        <div className="flex items-center justify-around h-14 px-2 overflow-x-auto">
           {navItems.slice(0, 5).map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${
+              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors flex-shrink-0 ${
                 isActive(item.path) ? "text-primary" : "text-muted-foreground"
               }`}
             >

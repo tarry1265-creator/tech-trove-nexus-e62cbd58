@@ -25,7 +25,7 @@ const AdminUsers = () => {
     mutationFn: async ({ userId, ban }: { userId: string; ban: boolean }) => {
       const { error } = await supabase
         .from("profiles")
-        .update({ is_banned: ban } as any)
+        .update({ is_banned: ban })
         .eq("user_id", userId);
       if (error) throw error;
     },
@@ -33,7 +33,8 @@ const AdminUsers = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
       toast.success(ban ? "User has been banned" : "User has been unbanned");
     },
-    onError: () => {
+    onError: (err) => {
+      console.error("Ban/unban error:", err);
       toast.error("Failed to update user status");
     },
   });
@@ -153,7 +154,7 @@ const AdminUsers = () => {
                       </div>
                       <div>
                         <p className="text-muted-foreground text-xs">Status</p>
-                        <p className={isBanned ? "text-destructive font-medium" : "text-green-600 font-medium"}>
+                        <p className={isBanned ? "text-destructive font-medium" : "text-success font-medium"}>
                           {isBanned ? "Banned" : "Active"}
                         </p>
                       </div>
@@ -166,7 +167,7 @@ const AdminUsers = () => {
                       disabled={toggleBan.isPending}
                       className={`w-full py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50 ${
                         isBanned
-                          ? "bg-green-600/10 text-green-600 hover:bg-green-600/20"
+                          ? "bg-success/10 text-success hover:bg-success/20"
                           : "bg-destructive/10 text-destructive hover:bg-destructive/20"
                       }`}
                     >

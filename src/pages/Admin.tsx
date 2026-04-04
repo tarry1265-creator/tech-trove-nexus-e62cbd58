@@ -40,7 +40,9 @@ const Admin = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "products">("overview");
 
-  // Stats
+  // Revenue based on ALL orders (completed + delivered), not just active ones
+  const completedOrders = orders.filter(o => o.status === 'completed' || o.status === 'delivered' || o.status === 'paid');
+  
   const stats = {
     totalProducts: products.length,
     outOfStock: products.filter(p => (p.stock_quantity ?? 100) === 0).length,
@@ -50,11 +52,10 @@ const Admin = () => {
     }).length,
     totalOrders: orders.length,
     pendingOrders: orders.filter(o => o.status === 'pending').length,
-    revenue: orders.reduce((sum, o) => sum + o.total_amount, 0),
+    revenue: completedOrders.reduce((sum, o) => sum + o.total_amount, 0),
     totalUsers: profiles.length,
   };
 
-  // Sort by stock (low stock first) for products view
   const sortedProducts = [...products].sort((a, b) => {
     const stockA = a.stock_quantity ?? 100;
     const stockB = b.stock_quantity ?? 100;
@@ -101,23 +102,69 @@ const Admin = () => {
     }
   };
 
+  // CSV Export
+  const handleExportCSV = () => {
+    // Build order items frequency map
+    const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+    // We'd need order_items, but we can use products + orders for now
+    
+    const lines: string[] = [];
+    lines.push("BRAINHUB Admin Report");
+    lines.push(`Generated: ${new Date().toLocaleString()}`);
+    lines.push("");
+    
+    // Summary
+    lines.push("=== SUMMARY ===");
+    lines.push(`Total Revenue,₦${stats.revenue.toLocaleString()}`);
+    lines.push(`Total Orders,${stats.totalOrders}`);
+    lines.push(`Total Products,${stats.totalProducts}`);
+    lines.push(`Total Users,${stats.totalUsers}`);
+    lines.push(`Low Stock Items,${stats.lowStock}`);
+    lines.push(`Out of Stock Items,${stats.outOfStock}`);
+    lines.push("");
+    
+    // Products
+    lines.push("=== PRODUCTS ===");
+    lines.push("Name,Price (₦),Stock,Brand,Category,Featured,New Arrival");
+    products.forEach(p => {
+      const cat = categories.find((c: any) => c.id === p.category_id);
+      lines.push(`"${p.name}",${p.price},${p.stock_quantity ?? 0},"${p.brand || ''}","${cat?.name || ''}",${p.is_featured ? 'Yes' : 'No'},${p.is_new_arrival ? 'Yes' : 'No'}`);
+    });
+    lines.push("");
+    
+    // Orders
+    lines.push("=== ORDERS ===");
+    lines.push("Order ID,Date,Status,Amount (₦)");
+    orders.forEach(o => {
+      lines.push(`${o.id.slice(0, 8)},${new Date(o.created_at).toLocaleDateString()},${o.status},${o.total_amount}`);
+    });
+
+    const csvContent = lines.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `brainhub-admin-report-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV report downloaded!");
+  };
+
   return (
     <AdminLayout title="Control Room" subtitle="Manage your store from one place">
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          onClick={() => setShowScanModal(true)}
-          className="btn-primary text-sm"
-        >
+        <button onClick={() => setShowScanModal(true)} className="btn-primary text-sm">
           <span className="material-symbols-outlined text-lg">add</span>
           Add Product
         </button>
-        <button
-          onClick={() => navigate("/admin/orders")}
-          className="btn-secondary text-sm"
-        >
+        <button onClick={() => navigate("/admin/orders")} className="btn-secondary text-sm">
           <span className="material-symbols-outlined text-lg">shopping_bag</span>
           View Orders
+        </button>
+        <button onClick={handleExportCSV} className="btn-outline text-sm">
+          <span className="material-symbols-outlined text-lg">download</span>
+          Export CSV
         </button>
       </div>
 
@@ -173,8 +220,8 @@ const Admin = () => {
 
         <div className="stat-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/users")}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-blue-500">group</span>
+            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+              <span className="material-symbols-outlined text-accent-foreground">group</span>
             </div>
             <div>
               <div className="stat-value">{stats.totalUsers}</div>
@@ -190,6 +237,7 @@ const Admin = () => {
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
             <p className="text-2xl lg:text-3xl font-bold text-foreground">{formatPrice(stats.revenue)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Based on all successful payments</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-primary text-2xl">payments</span>
@@ -224,7 +272,6 @@ const Admin = () => {
       {/* Content */}
       {activeTab === "overview" ? (
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Alerts */}
           <div className="card p-5">
             <h3 className="font-semibold text-foreground mb-4">Inventory Alerts</h3>
             {stats.lowStock + stats.outOfStock === 0 ? (
@@ -259,7 +306,6 @@ const Admin = () => {
             )}
           </div>
 
-          {/* Recent Orders */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">Recent Orders</h3>
@@ -290,7 +336,7 @@ const Admin = () => {
                     <div className="text-right">
                       <p className="text-sm font-semibold text-foreground">{formatPrice(order.total_amount)}</p>
                       <span className={`badge ${
-                        order.status === 'completed' ? 'badge-success' : 
+                        order.status === 'completed' || order.status === 'delivered' ? 'badge-success' : 
                         order.status === 'pending' ? 'badge-warning' : 'badge-primary'
                       }`}>
                         {order.status}
@@ -303,7 +349,6 @@ const Admin = () => {
           </div>
         </div>
       ) : (
-        /* Products Tab */
         <div>
           {productsLoading ? (
             <div className="card p-8 text-center">
@@ -327,7 +372,6 @@ const Admin = () => {
         </div>
       )}
 
-      {/* Modals */}
       <ScanProductModal
         open={showScanModal}
         onClose={() => setShowScanModal(false)}
