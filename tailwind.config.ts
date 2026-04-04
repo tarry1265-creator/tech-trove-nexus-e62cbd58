@@ -62,7 +62,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Poppins", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
