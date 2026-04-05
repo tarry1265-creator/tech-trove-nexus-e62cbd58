@@ -146,7 +146,7 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground">Orders</p>
           </div>
           <div className="card p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{wishlistItems.length}</p>
+            <p className="text-2xl font-bold text-foreground">{<p className="text-2xl font-bold text-foreground">{wishlistIds.length}</p>}</p>
             <p className="text-sm text-muted-foreground">Wishlist</p>
           </div>
           <div className="card p-4 text-center">
