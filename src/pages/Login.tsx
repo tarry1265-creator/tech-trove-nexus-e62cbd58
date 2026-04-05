@@ -196,6 +196,15 @@ const Login = () => {
               />
             </div>
             <div className="login-input-field">
+              <span className="material-symbols-outlined text-muted-foreground">phone</span>
+              <input
+                type="tel"
+                placeholder="Phone Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="login-input-field">
               <span className="material-symbols-outlined text-muted-foreground">lock</span>
               <input
                 type={showPassword ? "text" : "password"}
