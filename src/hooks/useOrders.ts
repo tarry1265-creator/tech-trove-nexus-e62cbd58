@@ -24,7 +24,7 @@ export interface Order {
   items?: OrderItem[];
 }
 
-// Fetch all orders (for admin)
+// Fetch all orders (for admin - works without auth now)
 export const useOrders = () => {
   return useQuery({
     queryKey: ["all-orders"],
@@ -35,7 +35,6 @@ export const useOrders = () => {
         .order("created_at", { ascending: false });
 
       if (ordersError) throw ordersError;
-      
       return (orders || []) as Order[];
     },
     staleTime: 1000 * 60 * 2,
@@ -60,7 +59,6 @@ export const useUserOrders = () => {
 
       if (ordersError) throw ordersError;
       
-      // Fetch order items for each order
       const ordersWithItems = await Promise.all(
         (orders || []).map(async (order) => {
           const { data: items, error: itemsError } = await supabase
@@ -72,7 +70,6 @@ export const useUserOrders = () => {
             console.error("Error fetching order items:", itemsError);
             return { ...order, items: [] };
           }
-          
           return { ...order, items: items || [] };
         })
       );
