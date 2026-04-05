@@ -92,6 +92,20 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      // Save username and phone to profile after signup
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          const updateData: any = {};
+          if (username.trim()) updateData.username = username.trim();
+          if (phone.trim()) updateData.phone_number = phone.trim();
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("user_id", newUser.id);
+          }
+        }
+      } catch (e) {
+        console.error("Error saving profile data:", e);
+      }
       toast({ title: "Check your email!", description: "We've sent you a verification link." });
       setIsSignUpMode(false);
     }
