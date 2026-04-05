@@ -31,6 +31,7 @@ const AdminUsers = () => {
     },
     onSuccess: (_, { ban }) => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-profiles-count"] });
       toast.success(ban ? "User has been banned" : "User has been unbanned");
     },
     onError: (err) => {
@@ -44,7 +45,6 @@ const AdminUsers = () => {
 
   return (
     <AdminLayout title="Users" subtitle="Manage customers and access">
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         <div className="stat-card">
           <div className="flex items-center gap-3">
@@ -57,7 +57,6 @@ const AdminUsers = () => {
             </div>
           </div>
         </div>
-
         <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
@@ -69,7 +68,6 @@ const AdminUsers = () => {
             </div>
           </div>
         </div>
-
         <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
@@ -83,7 +81,6 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Users List */}
       {profiles.length === 0 ? (
         <div className="card p-8 text-center">
           <span className="material-symbols-outlined text-5xl text-muted-foreground mb-3">group</span>
@@ -98,10 +95,7 @@ const AdminUsers = () => {
 
             return (
               <div key={profile.id} className={`card overflow-hidden ${isBanned ? "opacity-60" : ""}`}>
-                <button
-                  onClick={() => setSelectedUser(isExpanded ? null : profile.id)}
-                  className="w-full p-4 text-left"
-                >
+                <button onClick={() => setSelectedUser(isExpanded ? null : profile.id)} className="w-full p-4 text-left">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {profile.avatar_url ? (
@@ -113,15 +107,14 @@ const AdminUsers = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-foreground truncate">
-                          {profile.username || "No username"}
+                          {profile.username || `User ${profile.user_id.slice(0, 8)}`}
                         </p>
                         {isBanned && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive">
-                            BANNED
-                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive">BANNED</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
+                        {profile.phone_number ? `📱 ${profile.phone_number} · ` : ""}
                         Joined {new Date(profile.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -143,13 +136,13 @@ const AdminUsers = () => {
                         <p className="text-foreground">{profile.username || "—"}</p>
                       </div>
                       <div>
+                        <p className="text-muted-foreground text-xs">Phone</p>
+                        <p className="text-foreground">{profile.phone_number || "—"}</p>
+                      </div>
+                      <div>
                         <p className="text-muted-foreground text-xs">Joined</p>
                         <p className="text-foreground">
-                          {new Date(profile.created_at).toLocaleDateString("en-NG", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {new Date(profile.created_at).toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
                       </div>
                       <div>
@@ -161,9 +154,7 @@ const AdminUsers = () => {
                     </div>
 
                     <button
-                      onClick={() =>
-                        toggleBan.mutate({ userId: profile.user_id, ban: !isBanned })
-                      }
+                      onClick={() => toggleBan.mutate({ userId: profile.user_id, ban: !isBanned })}
                       disabled={toggleBan.isPending}
                       className={`w-full py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50 ${
                         isBanned
@@ -171,11 +162,7 @@ const AdminUsers = () => {
                           : "bg-destructive/10 text-destructive hover:bg-destructive/20"
                       }`}
                     >
-                      {toggleBan.isPending
-                        ? "Updating..."
-                        : isBanned
-                        ? "Unban User"
-                        : "Ban User"}
+                      {toggleBan.isPending ? "Updating..." : isBanned ? "Unban User" : "Ban User"}
                     </button>
                   </div>
                 )}

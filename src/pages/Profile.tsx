@@ -4,6 +4,8 @@ import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { useUserOrders } from "@/hooks/useOrders";
+import { useWishlist } from "@/context/WishlistContext";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -12,6 +14,8 @@ const Profile = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { data: userOrders = [] } = useUserOrders();
+  const { wishlistIds } = useWishlist();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,20 +47,12 @@ const Profile = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file",
-        description: "Please select an image file.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image under 5MB.",
-        variant: "destructive",
-      });
+      toast({ title: "File too large", description: "Please select an image under 5MB.", variant: "destructive" });
       return;
     }
 
@@ -65,21 +61,12 @@ const Profile = () => {
     setIsUploading(false);
 
     if (error) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
     } else {
-      toast({
-        title: "Avatar updated",
-        description: "Your profile picture has been updated.",
-      });
+      toast({ title: "Avatar updated", description: "Your profile picture has been updated." });
     }
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleRemoveAvatar = async () => {
@@ -88,16 +75,9 @@ const Profile = () => {
     setIsUploading(false);
 
     if (error) {
-      toast({
-        title: "Remove failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Remove failed", description: error.message, variant: "destructive" });
     } else {
-      toast({
-        title: "Avatar removed",
-        description: "Your profile picture has been removed.",
-      });
+      toast({ title: "Avatar removed", description: "Your profile picture has been removed." });
     }
   };
 
@@ -111,9 +91,7 @@ const Profile = () => {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const displayName = profile?.username || user.email?.split("@")[0] || "User";
   const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
@@ -121,7 +99,6 @@ const Profile = () => {
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
-        {/* Back to Home Button */}
         <button
           onClick={() => navigate("/home")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -132,46 +109,26 @@ const Profile = () => {
 
         <div className="card p-4 sm:p-6 mb-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="relative group flex-shrink-0">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="w-20 h-20 rounded-xl object-cover border border-border"
-              />
+              <img src={avatarUrl} alt={displayName} className="w-20 h-20 rounded-xl object-cover border border-border" />
             ) : (
               <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center border border-border">
-                <span className="material-symbols-outlined text-4xl text-primary">
-                  person
-                </span>
+                <span className="material-symbols-outlined text-4xl text-primary">person</span>
               </div>
             )}
             <div
               onClick={isUploading ? undefined : handleAvatarClick}
-              className={`absolute inset-0 rounded-xl bg-foreground/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
-                isUploading ? "cursor-wait" : "cursor-pointer"
-              }`}
+              className={`absolute inset-0 rounded-xl bg-foreground/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isUploading ? "cursor-wait" : "cursor-pointer"}`}
             >
               {isUploading ? (
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-background"></div>
               ) : (
-                <span className="material-symbols-outlined text-background text-2xl">
-                  photo_camera
-                </span>
+                <span className="material-symbols-outlined text-background text-2xl">photo_camera</span>
               )}
             </div>
             {avatarUrl && !isUploading && (
-              <button
-                onClick={handleRemoveAvatar}
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Remove avatar"
-              >
+              <button onClick={handleRemoveAvatar} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" title="Remove avatar">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
             )}
@@ -179,19 +136,17 @@ const Profile = () => {
           <div className="text-center sm:text-left min-w-0 w-full">
             <h1 className="font-display text-2xl font-bold truncate">{displayName}</h1>
             <p className="text-muted-foreground text-sm sm:text-base truncate max-w-full">{user.email}</p>
-            {profile?.username && (
-              <p className="text-sm text-primary mt-1 truncate">@{profile.username}</p>
-            )}
+            {profile?.username && <p className="text-sm text-primary mt-1 truncate">@{profile.username}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="card p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">0</p>
+            <p className="text-2xl font-bold text-foreground">{userOrders.length}</p>
             <p className="text-sm text-muted-foreground">Orders</p>
           </div>
           <div className="card p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">0</p>
+            <p className="text-2xl font-bold text-foreground">{<p className="text-2xl font-bold text-foreground">{wishlistIds.length}</p>}</p>
             <p className="text-sm text-muted-foreground">Wishlist</p>
           </div>
           <div className="card p-4 text-center">
@@ -205,9 +160,7 @@ const Profile = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors ${
-                index !== menuItems.length - 1 ? "border-b border-border" : ""
-              }`}
+              className={`w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors ${index !== menuItems.length - 1 ? "border-b border-border" : ""}`}
             >
               <span className="material-symbols-outlined text-primary">{item.icon}</span>
               <span className="flex-1 text-left font-medium">{item.label}</span>
@@ -216,22 +169,15 @@ const Profile = () => {
           ))}
         </div>
 
-        {/* Admin Link */}
         {isAdmin && (
-          <button
-            onClick={() => navigate("/admin")}
-            className="w-full card p-4 flex items-center gap-4 hover:bg-muted transition-colors mb-6"
-          >
+          <button onClick={() => navigate("/admin")} className="w-full card p-4 flex items-center gap-4 hover:bg-muted transition-colors mb-6">
             <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
             <span className="flex-1 text-left font-medium">Admin Dashboard</span>
             <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
           </button>
         )}
 
-        <button
-          onClick={handleSignOut}
-          className="w-full p-4 border border-destructive text-destructive rounded-xl hover:bg-destructive/10 transition-colors font-medium"
-        >
+        <button onClick={handleSignOut} className="w-full p-4 border border-destructive text-destructive rounded-xl hover:bg-destructive/10 transition-colors font-medium">
           Log Out
         </button>
       </div>

@@ -67,8 +67,23 @@ const PaymentSuccess = () => {
 
         if (paymentStatus === "success") {
           await saveOrder(cartItems);
-          // Send order emails
+          // Send order emails via Gmail SMTP
           try {
+            // Fetch user profile for phone number
+            let customerPhone = "";
+            let customerName = user?.email?.split("@")[0] || "Customer";
+            if (user?.id) {
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("phone_number, username")
+                .eq("user_id", user.id)
+                .single();
+              if (profileData) {
+                customerPhone = (profileData as any).phone_number || "";
+                if ((profileData as any).username) customerName = (profileData as any).username;
+              }
+            }
+
             const orderItems = cartItems.map((item: any) => ({
               product_name: item.name,
               quantity: Number(item.quantity) || 1,
@@ -78,10 +93,11 @@ const PaymentSuccess = () => {
               (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
               0
             );
-            await supabase.functions.invoke("send-order-notification", {
+            await supabase.functions.invoke("send-order-emails", {
               body: {
                 customerEmail: user?.email,
-                customerName: user?.email?.split("@")[0],
+                customerName,
+                customerPhone,
                 orderItems,
                 orderId: txRef || "unknown",
                 totalAmount,

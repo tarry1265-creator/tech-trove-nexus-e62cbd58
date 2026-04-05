@@ -92,6 +92,20 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      // Save username and phone to profile after signup
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          const updateData: any = {};
+          if (username.trim()) updateData.username = username.trim();
+          if (phone.trim()) updateData.phone_number = phone.trim();
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("user_id", newUser.id);
+          }
+        }
+      } catch (e) {
+        console.error("Error saving profile data:", e);
+      }
       toast({ title: "Check your email!", description: "We've sent you a verification link." });
       setIsSignUpMode(false);
     }
@@ -179,6 +193,15 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+              />
+            </div>
+            <div className="login-input-field">
+              <span className="material-symbols-outlined text-muted-foreground">phone</span>
+              <input
+                type="tel"
+                placeholder="Phone Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
             <div className="login-input-field">
