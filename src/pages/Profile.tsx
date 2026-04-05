@@ -15,7 +15,7 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { data: userOrders = [] } = useUserOrders();
-  const { items: wishlistItems } = useWishlist();
+  const { wishlistIds } = useWishlist();
 
   useEffect(() => {
     if (!loading && !user) {
