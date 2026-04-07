@@ -50,7 +50,7 @@ serve(async (req) => {
         name: shippingInfo?.name || "Customer",
       },
       customizations: {
-        title: "TechTrove",
+        title: "BRAINHUB TECH",
         description: "Payment for your order",
       },
       meta: {

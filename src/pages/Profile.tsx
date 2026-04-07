@@ -6,6 +6,8 @@ import { useIsAdmin } from "@/hooks/useAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { useUserOrders } from "@/hooks/useOrders";
 import { useWishlist } from "@/context/WishlistContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -16,6 +18,20 @@ const Profile = () => {
   const [isUploading, setIsUploading] = useState(false);
   const { data: userOrders = [] } = useUserOrders();
   const { wishlistIds } = useWishlist();
+
+  const { data: loyaltyData } = useQuery({
+    queryKey: ["loyalty_points", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("loyalty_points")
+        .select("points_balance")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -146,12 +162,12 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground">Orders</p>
           </div>
           <div className="card p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{<p className="text-2xl font-bold text-foreground">{wishlistIds.length}</p>}</p>
+            <p className="text-2xl font-bold text-foreground">{wishlistIds.length}</p>
             <p className="text-sm text-muted-foreground">Wishlist</p>
           </div>
           <div className="card p-4 text-center">
-            <p className="text-2xl font-bold text-primary">New</p>
-            <p className="text-sm text-muted-foreground">Member</p>
+            <p className="text-2xl font-bold text-primary">{(loyaltyData as any)?.points_balance ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Points</p>
           </div>
         </div>
 
