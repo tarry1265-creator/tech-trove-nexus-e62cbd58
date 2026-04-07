@@ -69,10 +69,11 @@ const PaymentSuccess = () => {
           await saveOrder(cartItems);
           // Send order emails via Gmail SMTP
           try {
-            // Fetch user profile for phone number
-            let customerPhone = "";
-            let customerName = user?.email?.split("@")[0] || "Customer";
-            if (user?.id) {
+            // Use checkout phone from localStorage (filled during checkout)
+            let customerPhone = localStorage.getItem("checkout_phone") || "";
+            let customerName = localStorage.getItem("checkout_name") || user?.email?.split("@")[0] || "Customer";
+            // Fallback to profile if checkout info not available
+            if (!customerPhone && user?.id) {
               const { data: profileData } = await supabase
                 .from("profiles")
                 .select("phone_number, username")
@@ -106,6 +107,53 @@ const PaymentSuccess = () => {
           } catch (emailErr) {
             console.error("Failed to send order emails:", emailErr);
           }
+
+          // Award loyalty points for items > ₦500
+          try {
+            if (user?.id) {
+              let totalPoints = 0;
+              for (const item of cartItems) {
+                const price = Number(item.price) || 0;
+                const qty = Number(item.quantity) || 1;
+                for (let i = 0; i < qty; i++) {
+                  if (price > 500) {
+                    totalPoints += Math.floor(price * 0.01);
+                  }
+                }
+              }
+              if (totalPoints > 0) {
+                // Upsert loyalty points
+                const { data: existing } = await supabase
+                  .from("loyalty_points")
+                  .select("points_balance")
+                  .eq("user_id", user.id)
+                  .single();
+                if (existing) {
+                  await supabase
+                    .from("loyalty_points")
+                    .update({ points_balance: existing.points_balance + totalPoints })
+                    .eq("user_id", user.id);
+                } else {
+                  await supabase
+                    .from("loyalty_points")
+                    .insert({ user_id: user.id, points_balance: totalPoints });
+                }
+                // Log transaction
+                await supabase.from("loyalty_transactions").insert({
+                  user_id: user.id,
+                  points: totalPoints,
+                  type: "earned",
+                  description: `Earned from order`,
+                  order_id: null,
+                });
+              }
+            }
+          } catch (loyaltyErr) {
+            console.error("Failed to award loyalty points:", loyaltyErr);
+          }
+
+          localStorage.removeItem("checkout_phone");
+          localStorage.removeItem("checkout_name");
           clearCart();
           setVerified(true);
         } else {
