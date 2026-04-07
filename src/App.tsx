@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Repair from "./pages/Repair";
+import DIYRepair from "./pages/DIYRepair";
 import Orders from "./pages/Orders";
 import Wishlist from "./pages/Wishlist";
 import Addresses from "./pages/Addresses";
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/repair" element={<Repair />} />
+                <Route path="/diy-repair" element={<DIYRepair />} />
                 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminPasswordGate><Admin /></AdminPasswordGate>} />

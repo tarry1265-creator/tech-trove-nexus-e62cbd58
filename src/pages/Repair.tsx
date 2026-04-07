@@ -147,16 +147,25 @@ const Repair = () => {
 
         <div className="max-w-2xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-primary">build</span>
+          <div className="flex items-center justify-between mb-8">
+            <div className="text-center flex-1">
+              <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-3xl text-primary">build</span>
+              </div>
+              <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-2">
+                Device Repair Request
+              </h1>
+              <p className="text-muted-foreground">
+                Tell us about your device and we'll help you get it fixed
+              </p>
             </div>
-            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-2">
-              Device Repair Request
-            </h1>
-            <p className="text-muted-foreground">
-              Tell us about your device and we'll help you get it fixed
-            </p>
+            <button
+              onClick={() => navigate("/diy-repair")}
+              className="absolute top-4 right-4 lg:relative lg:top-0 lg:right-0 btn-primary px-4 py-2 text-sm flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">handyman</span>
+              DIY Repair
+            </button>
           </div>
 
           {/* Form */}
