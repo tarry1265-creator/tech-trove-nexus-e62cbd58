@@ -16,6 +16,7 @@ const Profile = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [apkDownloaded, setApkDownloaded] = useState(false);
   const { data: userOrders = [] } = useUserOrders();
   const { wishlistIds } = useWishlist();
 
@@ -189,6 +190,23 @@ const Profile = () => {
           <button onClick={() => navigate("/admin")} className="w-full card p-4 flex items-center gap-4 hover:bg-muted transition-colors mb-6">
             <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
             <span className="flex-1 text-left font-medium">Admin Dashboard</span>
+            <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
+          </button>
+        )}
+
+        {!apkDownloaded && (
+          <button
+            onClick={() => {
+              const link = document.createElement("a");
+              link.href = "/app-release.apk";
+              link.download = "Brainhub.apk";
+              link.click();
+              setApkDownloaded(true);
+            }}
+            className="w-full card p-4 flex items-center gap-4 hover:bg-muted transition-colors mb-6"
+          >
+            <span className="material-symbols-outlined text-primary">download</span>
+            <span className="flex-1 text-left font-medium">Download App</span>
             <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
           </button>
         )}
