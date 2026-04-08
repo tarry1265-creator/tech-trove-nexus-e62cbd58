@@ -16,6 +16,7 @@ const Profile = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [apkDownloaded, setApkDownloaded] = useState(false);
   const { data: userOrders = [] } = useUserOrders();
   const { wishlistIds } = useWishlist();
 
