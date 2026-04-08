@@ -44,6 +44,7 @@ serve(async (req) => {
       amount: totalAmount,
       currency: "NGN",
       redirect_url: callbackUrl || "http://localhost:3000/payment-success",
+      payment_options: "banktransfer,ussd,mobilemoney",
       customer: {
         email: shippingInfo?.email || `customer_${Date.now()}@placeholder.com`,
         phonenumber: shippingInfo?.phone || "",
