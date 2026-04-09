@@ -23,22 +23,24 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
-  const showBottomNav = location.pathname !== "/secadmin";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 bg-background border-b border-border">
         <div className="flex items-center justify-between h-14 px-4 lg:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+            <button onClick={() => navigate("/home")} className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
                 <span className="material-symbols-outlined text-primary-foreground text-lg">memory</span>
               </div>
               <span className="font-bold text-foreground hidden sm:inline">BRAINHUB</span>
-            </div>
+            </button>
             <div className="w-px h-6 bg-border hidden sm:block" />
             <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Admin Panel</span>
           </div>
+          <button onClick={() => navigate("/home")} className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+            <span className="material-symbols-outlined text-xl">storefront</span>
+          </button>
         </div>
       </header>
 
@@ -73,26 +75,24 @@ const AdminLayout = ({ children, title, subtitle }: AdminLayoutProps) => {
         </main>
       </div>
 
-      {showBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-          <div className="flex items-center justify-around h-14 px-2 overflow-x-auto">
-            {navItems.slice(0, 5).map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors flex-shrink-0 ${
-                  isActive(item.path) ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                <span className={`material-symbols-outlined text-xl ${isActive(item.path) ? "filled" : ""}`}>
-                  {item.icon}
-                </span>
-                <span className="text-[9px] font-medium">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-      )}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
+        <div className="flex items-center justify-around h-14 px-2 overflow-x-auto">
+          {navItems.slice(0, 5).map((item) => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors flex-shrink-0 ${
+                isActive(item.path) ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <span className={`material-symbols-outlined text-xl ${isActive(item.path) ? "filled" : ""}`}>
+                {item.icon}
+              </span>
+              <span className="text-[9px] font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };

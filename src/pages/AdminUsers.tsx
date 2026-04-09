@@ -107,14 +107,14 @@ const AdminUsers = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-foreground truncate">
-                          {profile.username || "No username set"}
+                          {profile.username || `User ${profile.user_id.slice(0, 8)}`}
                         </p>
                         {isBanned && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive">BANNED</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        📱 {profile.phone_number || "No phone number"} ·{" "}
+                        {profile.phone_number ? `📱 ${profile.phone_number} · ` : ""}
                         Joined {new Date(profile.created_at).toLocaleDateString()}
                       </p>
                     </div>
