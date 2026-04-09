@@ -104,13 +104,25 @@ const Repair = () => {
       if (error) throw error;
 
       const whatsappMessage = encodeURIComponent(data.message);
-      // Use whatsapp:// scheme to open app directly on mobile, fallback to wa.me for web
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const whatsappUrl = isMobile 
-        ? `whatsapp://send?phone=2347068450457&text=${whatsappMessage}`
-        : `https://wa.me/2347068450457?text=${whatsappMessage}`;
-      
-      window.open(whatsappUrl, "_blank");
+      const userAgent = navigator.userAgent || "";
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      const appUrl = `whatsapp://send?phone=2347068450457&text=${whatsappMessage}`;
+      const webUrl = `https://wa.me/2347068450457?text=${whatsappMessage}`;
+
+      if (isIOS) {
+        window.location.href = webUrl;
+      } else if (isMobile) {
+        const launchTime = Date.now();
+        window.location.href = appUrl;
+        setTimeout(() => {
+          if (Date.now() - launchTime < 1800) {
+            window.location.href = webUrl;
+          }
+        }, 1200);
+      } else {
+        window.location.href = webUrl;
+      }
 
       toast({
         title: "Request processed!",

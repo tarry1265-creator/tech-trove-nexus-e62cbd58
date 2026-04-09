@@ -55,20 +55,20 @@ const SecAdmin = () => {
   const selected = products.find((p) => p.id === selectedProduct);
 
   return (
-    <AdminLayout title="In-Store Sales" subtitle="Deduct stock for physical purchases">
+    <AdminLayout title="In-Store Sales" subtitle="Deduct stock for physical purchases" showMobileNav={false}>
       {/* Selected Product Card */}
       {selected && (
-        <div className="card p-5 mb-6">
-          <div className="flex gap-4 items-center">
+        <div className="card p-4 sm:p-5 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
             <img
               src={selected.image_url}
               alt={selected.name}
-              className="w-20 h-20 rounded-xl object-cover bg-muted"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover bg-muted"
             />
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground text-lg truncate">{selected.name}</h3>
+              <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">{selected.name}</h3>
               <p className="text-sm text-muted-foreground">{selected.brand || "No brand"}</p>
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2">
                 <span className="text-sm font-medium text-foreground">{formatPrice(selected.price)}</span>
                 <span className={`text-sm font-medium ${(selected.stock_quantity ?? 0) <= 5 ? 'text-destructive' : 'text-green-600'}`}>
                   Stock: {selected.stock_quantity ?? 0}
@@ -77,14 +77,13 @@ const SecAdmin = () => {
             </div>
             <button
               onClick={() => { setSelectedProduct(null); setDeductAmount(""); }}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground self-end sm:self-auto"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
 
-          {/* Deduct Form */}
-          <div className="mt-4 flex gap-3 items-end">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Quantity Sold
@@ -101,7 +100,7 @@ const SecAdmin = () => {
             <button
               onClick={handleDeductStock}
               disabled={updateStock.isPending || !deductAmount}
-              className="btn-primary px-6 py-2.5 disabled:opacity-50"
+              className="btn-primary w-full sm:w-auto px-6 py-2.5 disabled:opacity-50"
             >
               {updateStock.isPending ? (
                 <span className="flex items-center gap-2">
@@ -120,7 +119,7 @@ const SecAdmin = () => {
       )}
 
       {/* Search */}
-      <div className="relative mb-6">
+      <div className="relative mb-4 sm:mb-6">
         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xl">
           search
         </span>
@@ -156,7 +155,7 @@ const SecAdmin = () => {
                   setSelectedProduct(product.id);
                   setDeductAmount("");
                 }}
-                className={`card p-4 text-left transition-all hover:shadow-md ${
+                className={`card p-3 sm:p-4 text-left transition-all hover:shadow-md ${
                   isSelected ? "ring-2 ring-primary" : ""
                 } ${stock === 0 ? "opacity-50" : ""}`}
                 disabled={stock === 0}
@@ -165,7 +164,7 @@ const SecAdmin = () => {
                   <img
                     src={product.image_url}
                     alt={product.name}
-                    className="w-14 h-14 rounded-lg object-cover bg-muted flex-shrink-0"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover bg-muted flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-foreground text-sm truncate">{product.name}</h4>

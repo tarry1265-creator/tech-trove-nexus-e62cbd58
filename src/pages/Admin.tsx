@@ -103,11 +103,31 @@ const Admin = () => {
   };
 
   // CSV Export
-  const handleExportCSV = () => {
-    // Build order items frequency map
+  const handleExportCSV = async () => {
     const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
-    // We'd need order_items, but we can use products + orders for now
-    
+    const { data: orderItems, error: orderItemsError } = await supabase
+      .from("order_items")
+      .select("product_name, quantity, unit_price");
+
+    if (orderItemsError) {
+      toast.error("Failed to gather sales summary for CSV");
+      return;
+    }
+
+    (orderItems || []).forEach((item) => {
+      const key = item.product_name || "Unknown Product";
+      if (!productSales[key]) {
+        productSales[key] = { name: key, qty: 0, revenue: 0 };
+      }
+      productSales[key].qty += item.quantity || 0;
+      productSales[key].revenue += (item.quantity || 0) * (item.unit_price || 0);
+    });
+
+    const soldProducts = Object.values(productSales).filter((item) => item.qty > 0);
+    const sortedSales = [...soldProducts].sort((a, b) => b.qty - a.qty);
+    const mostSold = sortedSales[0] || null;
+    const leastSold = sortedSales.length > 0 ? sortedSales[sortedSales.length - 1] : null;
+
     const lines: string[] = [];
     lines.push("BRAINHUB Admin Report");
     lines.push(`Generated: ${new Date().toLocaleString()}`);
@@ -121,6 +141,8 @@ const Admin = () => {
     lines.push(`Total Users,${stats.totalUsers}`);
     lines.push(`Low Stock Items,${stats.lowStock}`);
     lines.push(`Out of Stock Items,${stats.outOfStock}`);
+    lines.push(`Most Sold Product,${mostSold ? `"${mostSold.name}" (${mostSold.qty} sold)` : "N/A"}`);
+    lines.push(`Least Sold Product,${leastSold ? `"${leastSold.name}" (${leastSold.qty} sold)` : "N/A"}`);
     lines.push("");
     
     // Products
