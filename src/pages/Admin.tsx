@@ -33,6 +33,17 @@ const Admin = () => {
     },
     staleTime: 1000 * 60 * 5,
   });
+  const { data: orderItems = [] } = useQuery({
+    queryKey: ["admin-order-items"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("order_id, product_id, product_name, quantity, unit_price");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 2,
+  });
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   
@@ -61,6 +72,21 @@ const Admin = () => {
     const stockB = b.stock_quantity ?? 100;
     return stockA - stockB;
   });
+
+  const successfulOrderIds = new Set(completedOrders.map((order) => order.id));
+  const successfulOrderItems = orderItems.filter((item: any) => successfulOrderIds.has(item.order_id));
+  const soldProductsMap = successfulOrderItems.reduce<Record<string, { name: string; qty: number; revenue: number }>>((acc, item: any) => {
+    const key = item.product_id || item.product_name;
+    if (!acc[key]) {
+      acc[key] = { name: item.product_name, qty: 0, revenue: 0 };
+    }
+    acc[key].qty += Number(item.quantity) || 0;
+    acc[key].revenue += (Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
+    return acc;
+  }, {});
+  const soldProducts = Object.values(soldProductsMap).sort((a, b) => b.qty - a.qty);
+  const mostSoldProduct = soldProducts[0] || null;
+  const leastSoldProduct = soldProducts[soldProducts.length - 1] || null;
 
   const handleSave = async (productId: string, stockValue: string, priceValue: string) => {
     const quantity = parseInt(stockValue, 10);
@@ -102,12 +128,7 @@ const Admin = () => {
     }
   };
 
-  // CSV Export
   const handleExportCSV = () => {
-    // Build order items frequency map
-    const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
-    // We'd need order_items, but we can use products + orders for now
-    
     const lines: string[] = [];
     lines.push("BRAINHUB Admin Report");
     lines.push(`Generated: ${new Date().toLocaleString()}`);
@@ -121,6 +142,10 @@ const Admin = () => {
     lines.push(`Total Users,${stats.totalUsers}`);
     lines.push(`Low Stock Items,${stats.lowStock}`);
     lines.push(`Out of Stock Items,${stats.outOfStock}`);
+    lines.push(`Most Sold Product,"${mostSoldProduct ? mostSoldProduct.name : "N/A"}"`);
+    lines.push(`Most Sold Quantity,${mostSoldProduct ? mostSoldProduct.qty : 0}`);
+    lines.push(`Least Sold Product,"${leastSoldProduct ? leastSoldProduct.name : "N/A"}"`);
+    lines.push(`Least Sold Quantity,${leastSoldProduct ? leastSoldProduct.qty : 0}`);
     lines.push("");
     
     // Products
@@ -137,6 +162,12 @@ const Admin = () => {
     lines.push("Order ID,Date,Status,Amount (₦)");
     orders.forEach(o => {
       lines.push(`${o.id.slice(0, 8)},${new Date(o.created_at).toLocaleDateString()},${o.status},${o.total_amount}`);
+    });
+    lines.push("");
+    lines.push("=== SALES BY PRODUCT ===");
+    lines.push("Product,Quantity Sold,Revenue (₦)");
+    soldProducts.forEach((item) => {
+      lines.push(`"${item.name}",${item.qty},${item.revenue}`);
     });
 
     const csvContent = lines.join("\n");

@@ -6,10 +6,16 @@ interface Profile {
   id: string;
   user_id: string;
   username: string | null;
+  phone_number?: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
   is_banned?: boolean;
+}
+
+interface SignUpProfileData {
+  username?: string;
+  phone_number?: string;
 }
 
 interface AuthContextType {
@@ -17,7 +23,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, profileData?: SignUpProfileData) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateUsername: (username: string) => Promise<{ error: Error | null }>;
@@ -44,17 +50,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [needsUsername, setNeedsUsername] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (authUser: User) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", authUser.id)
       .single();
 
     if (!error && data) {
-      setProfile(data);
-      // Check if user signed in with OAuth and doesn't have a username
-      setNeedsUsername(!data.username);
+      const metadataUsername = typeof authUser.user_metadata?.username === "string" ? authUser.user_metadata.username.trim() : "";
+      const metadataPhone = typeof authUser.user_metadata?.phone_number === "string" ? authUser.user_metadata.phone_number.trim() : "";
+      const updateData: Partial<Profile> = {};
+
+      if (!data.username && metadataUsername) {
+        updateData.username = metadataUsername;
+      }
+      if (!data.phone_number && metadataPhone) {
+        updateData.phone_number = metadataPhone;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await supabase.from("profiles").update(updateData).eq("user_id", authUser.id);
+      }
+
+      const mergedProfile = { ...data, ...updateData };
+      setProfile(mergedProfile);
+      setNeedsUsername(!mergedProfile.username);
     }
   };
 
@@ -68,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer profile fetch with setTimeout
         if (session?.user) {
           setTimeout(() => {
-            fetchProfile(session.user.id);
+            fetchProfile(session.user);
           }, 0);
         } else {
           setProfile(null);
@@ -83,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       }
       setLoading(false);
     });
@@ -91,13 +112,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, profileData?: SignUpProfileData) => {
     const redirectUrl = `${window.location.origin}/home`;
+    const metadata: SignUpProfileData = {};
+    if (profileData?.username?.trim()) metadata.username = profileData.username.trim();
+    if (profileData?.phone_number?.trim()) metadata.phone_number = profileData.phone_number.trim();
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        data: metadata,
       },
     });
     return { error: error as Error | null };
