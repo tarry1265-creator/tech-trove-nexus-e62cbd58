@@ -2,15 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 
-interface DeviceItem {
+interface SuggestResult {
   title: string;
-  slug: string;
-}
-
-interface SuggestItem {
   type: string;
-  title: string;
-  url?: string;
+  url: string;
+  guideid: number | null;
 }
 
 interface GuideListItem {
@@ -47,77 +43,38 @@ interface FullGuide {
   steps: GuideStep[];
 }
 
-type DeviceType = "mobile" | "laptop";
 type View = "home" | "guides" | "guide";
-
-const DEVICE_GROUPS: Record<DeviceType, DeviceItem[]> = {
-  mobile: [
-    { title: "iPhone 14", slug: "iPhone_14" },
-    { title: "iPhone 13", slug: "iPhone_13" },
-    { title: "iPhone 12", slug: "iPhone_12" },
-    { title: "Samsung Galaxy S23", slug: "Samsung_Galaxy_S23" },
-    { title: "Samsung Galaxy S22", slug: "Samsung_Galaxy_S22" },
-    { title: "Google Pixel 7", slug: "Google_Pixel_7" },
-    { title: "Google Pixel 6", slug: "Google_Pixel_6" }
-  ],
-  laptop: [
-    { title: "MacBook Pro", slug: "MacBook_Pro" },
-    { title: "MacBook Air", slug: "MacBook_Air" },
-    { title: "Dell XPS 13", slug: "Dell_XPS_13" },
-    { title: "HP Spectre x360", slug: "HP_Spectre_x360" },
-    { title: "Lenovo ThinkPad X1 Carbon", slug: "Lenovo_ThinkPad_X1_Carbon" },
-    { title: "ASUS ZenBook 14", slug: "ASUS_ZenBook_14" }
-  ]
-};
 
 const DIYRepair = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<View>("home");
-  const [activeDeviceType, setActiveDeviceType] = useState<DeviceType | null>(null);
-  const [selectedDevice, setSelectedDevice] = useState<DeviceItem | null>(null);
-  const [loadingGuides, setLoadingGuides] = useState(false);
-  const [guides, setGuides] = useState<GuideListItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [guides, setGuides] = useState<(SuggestResult | GuideListItem)[]>([]);
   const [fullGuide, setFullGuide] = useState<FullGuide | null>(null);
   const [loadingGuide, setLoadingGuide] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [expandAll, setExpandAll] = useState(false);
 
-  const resolveDeviceSlug = async (device: DeviceItem) => {
-    try {
-      const suggestRes = await fetch(
-        `https://www.ifixit.com/api/2.0/suggest/${encodeURIComponent(device.title)}?doctypes=device,guide`
-      );
-      if (!suggestRes.ok) return device.slug;
-      const suggestData = await suggestRes.json();
-      if (!Array.isArray(suggestData)) return device.slug;
-      const match = suggestData.find((item: SuggestItem) =>
-        item.type === "device" && item.title.toLowerCase() === device.title.toLowerCase() && item.url?.startsWith("/Device/")
-      );
-      if (!match?.url) return device.slug;
-      return match.url.replace("/Device/", "");
-    } catch {
-      return device.slug;
-    }
-  };
-
-  const loadDeviceGuides = async (device: DeviceItem) => {
-    setLoadingGuides(true);
-    setSelectedDevice(device);
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
     setView("guides");
     try {
-      const resolvedSlug = await resolveDeviceSlug(device);
-      const res = await fetch(`https://www.ifixit.com/api/2.0/categories/${resolvedSlug}`);
+      const res = await fetch(
+        `https://www.ifixit.com/api/2.0/suggest/${encodeURIComponent(searchQuery)}?doctypes=guide`
+      );
       if (res.ok) {
         const data = await res.json();
-        setGuides(Array.isArray(data?.guides) ? data.guides : []);
-      } else {
-        setGuides([]);
+        const results = (Array.isArray(data) ? data : []).filter(
+          (s: SuggestResult) => s.type === "guide" && s.guideid
+        );
+        setGuides(results);
       }
     } catch (e) {
-      console.error("Device guides error:", e);
-      setGuides([]);
+      console.error("Search error:", e);
     } finally {
-      setLoadingGuides(false);
+      setSearching(false);
     }
   };
 
@@ -139,17 +96,9 @@ const DIYRepair = () => {
   };
 
   const goBack = () => {
-    if (view === "guide") {
-      setView("guides");
-      setFullGuide(null);
-      return;
-    }
-    if (view === "guides") {
-      setView("home");
-      setGuides([]);
-      return;
-    }
-    navigate("/repair");
+    if (view === "guide") { setView("guides"); setFullGuide(null); }
+    else if (view === "guides") { setView("home"); setGuides([]); }
+    else navigate("/repair");
   };
 
   const stripHtml = (html: string) => {
@@ -162,16 +111,23 @@ const DIYRepair = () => {
     return step.media.data.map(img => img.standard || img.medium || img.original || img.thumbnail || "").filter(Boolean);
   };
 
+  const popularSearches = [
+    "iPhone screen replacement", "iPhone battery replacement", "Samsung screen repair",
+    "Samsung battery replacement", "iPhone charging port", "Samsung Galaxy screen",
+    "iPhone speaker repair", "Google Pixel screen", "OnePlus battery", "iPhone camera repair",
+  ];
+
   return (
     <Layout>
       <div className="content-container py-6 lg:py-10">
         <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
           <span className="material-symbols-outlined text-lg">arrow_back</span>
           <span className="text-sm font-medium">
-            {view === "guide" ? "Back to Guides" : view === "guides" ? "Back to Devices" : "Back to Repair"}
+            {view === "guide" ? "Back to Guides" : view === "guides" ? "Back to Search" : "Back to Repair"}
           </span>
         </button>
 
+        {/* HOME */}
         {view === "home" && (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
@@ -179,57 +135,52 @@ const DIYRepair = () => {
                 <span className="material-symbols-outlined text-3xl text-primary">handyman</span>
               </div>
               <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground mb-2">DIY Repair Guides</h1>
-              <p className="text-muted-foreground">Choose a device type to view supported repair guides</p>
+              <p className="text-muted-foreground">Search for phone repair guides</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="flex gap-2 mb-6">
+              <input
+                type="text"
+                placeholder="e.g. iPhone 14 screen replacement..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="input-field flex-1"
+              />
               <button
-                onClick={() => setActiveDeviceType("mobile")}
-                className={`card p-4 text-left transition-colors ${activeDeviceType === "mobile" ? "border-primary" : "hover:border-primary"}`}
+                onClick={handleSearch}
+                disabled={!searchQuery.trim()}
+                className="btn-primary px-5 disabled:opacity-50 flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-2xl text-primary mb-2">smartphone</span>
-                <p className="font-semibold text-foreground">Mobile Phones</p>
-                <p className="text-xs text-muted-foreground mt-1">iPhone, Samsung, Pixel</p>
-              </button>
-              <button
-                onClick={() => setActiveDeviceType("laptop")}
-                className={`card p-4 text-left transition-colors ${activeDeviceType === "laptop" ? "border-primary" : "hover:border-primary"}`}
-              >
-                <span className="material-symbols-outlined text-2xl text-primary mb-2">laptop_mac</span>
-                <p className="font-semibold text-foreground">Laptops</p>
-                <p className="text-xs text-muted-foreground mt-1">MacBook, Dell, HP, Lenovo</p>
+                <span className="material-symbols-outlined text-lg">search</span>
+                Search
               </button>
             </div>
 
-            {activeDeviceType && (
-              <div className="card p-4">
-                <h2 className="font-semibold text-foreground mb-3">
-                  {activeDeviceType === "mobile" ? "Mobile Devices" : "Laptop Devices"}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {DEVICE_GROUPS[activeDeviceType].map((device) => (
-                    <button
-                      key={device.slug}
-                      onClick={() => loadDeviceGuides(device)}
-                      className="w-full text-left rounded-lg border border-border px-3 py-2.5 hover:border-primary hover:bg-muted/40 transition-colors"
-                    >
-                      <span className="text-sm font-medium text-foreground">{device.title}</span>
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <p className="text-sm font-medium text-foreground mb-3">Popular Searches</p>
+              <div className="flex flex-wrap gap-2">
+                {popularSearches.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => { setSearchQuery(q); }}
+                    className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-muted transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
 
+        {/* GUIDES LIST */}
         {view === "guides" && (
           <>
             <h1 className="font-display text-xl lg:text-2xl font-bold text-foreground mb-1">Repair Guides</h1>
-            <p className="text-muted-foreground text-sm mb-6">
-              {selectedDevice ? `${selectedDevice.title} — ${guides.length} guide${guides.length !== 1 ? "s" : ""} found` : `${guides.length} guides found`}
-            </p>
+            <p className="text-muted-foreground text-sm mb-6">Results for "{searchQuery}" — {guides.length} found</p>
 
-            {loadingGuides ? (
+            {searching ? (
               <div className="flex justify-center py-12">
                 <span className="material-symbols-outlined text-4xl text-primary animate-spin">progress_activity</span>
               </div>
@@ -241,11 +192,12 @@ const DIYRepair = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {guides.map((g) => {
-                  const guideid = g.guideid;
+                  const guideid = "guideid" in g ? g.guideid : null;
+                  if (!guideid) return null;
                   const title = g.title;
-                  const image = g.image?.standard || g.image?.medium || g.image?.thumbnail || g.image?.original;
-                  const difficulty = g.difficulty;
-                  const timeReq = g.time_required;
+                  const image = "image" in g && g.image ? (g.image as any).standard : undefined;
+                  const difficulty = "difficulty" in g ? (g as GuideListItem).difficulty : undefined;
+                  const timeReq = "time_required" in g ? (g as GuideListItem).time_required : undefined;
 
                   return (
                     <button key={guideid} onClick={() => loadFullGuide(guideid)} className="card p-4 text-left hover:border-primary transition-colors">
@@ -263,6 +215,7 @@ const DIYRepair = () => {
           </>
         )}
 
+        {/* FULL GUIDE */}
         {view === "guide" && (
           <>
             {loadingGuide ? (
