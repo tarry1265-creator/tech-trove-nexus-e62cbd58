@@ -33,7 +33,7 @@ const Login = () => {
         navigate("/home");
       }
     }
-  }, [user, loading, navigate, isBanned, signOut]);
+  }, [user, loading, navigate, isBanned]);
 
   const validateInputs = () => {
     try { emailSchema.parse(email); } catch {
@@ -69,7 +69,7 @@ const Login = () => {
         .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
         .single();
 
-      if (profileData?.is_banned) {
+      if (profileData && (profileData as any).is_banned) {
         setShowBannedModal(true);
         await signOut();
         return;
@@ -81,10 +81,7 @@ const Login = () => {
   const handleSignUp = async () => {
     if (!validateInputs()) return;
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, {
-      username: username.trim() || undefined,
-      phone_number: phone.trim() || undefined,
-    });
+    const { error } = await signUp(email, password);
     setIsSubmitting(false);
     if (error) {
       toast({
@@ -95,6 +92,20 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      // Save username and phone to profile after signup
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          const updateData: any = {};
+          if (username.trim()) updateData.username = username.trim();
+          if (phone.trim()) updateData.phone_number = phone.trim();
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("user_id", newUser.id);
+          }
+        }
+      } catch (e) {
+        console.error("Error saving profile data:", e);
+      }
       toast({ title: "Check your email!", description: "We've sent you a verification link." });
       setIsSignUpMode(false);
     }
@@ -102,11 +113,7 @@ const Login = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUpMode) {
-      handleSignUp();
-    } else {
-      handleSignIn();
-    }
+    isSignUpMode ? handleSignUp() : handleSignIn();
   };
 
   if (loading) {

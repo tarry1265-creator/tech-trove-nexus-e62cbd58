@@ -10,7 +10,6 @@ const Dispatch = () => {
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
   const { data: orders = [], isLoading } = useQuery({
@@ -33,7 +32,7 @@ const Dispatch = () => {
 
           const { data: profile } = await supabase
             .from("profiles")
-            .select("username, avatar_url, phone_number")
+            .select("username, avatar_url")
             .eq("user_id", order.user_id)
             .single();
 
@@ -87,24 +86,13 @@ const Dispatch = () => {
             }}
             className="space-y-4"
           >
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field w-full pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <span className="material-symbols-outlined text-xl">
-                  {showPassword ? "visibility_off" : "visibility"}
-                </span>
-              </button>
-            </div>
+            <input
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field w-full"
+            />
             <button type="submit" className="btn-primary w-full py-3">
               Access Orders
             </button>
@@ -165,9 +153,6 @@ const Dispatch = () => {
                       <p className="text-sm text-muted-foreground">
                         {order.profile?.username || "Unknown user"} • {new Date(order.created_at).toLocaleDateString()}
                       </p>
-                      {order.profile?.phone_number && (
-                        <p className="text-xs text-muted-foreground">{order.profile.phone_number}</p>
-                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-foreground">{formatPrice(order.total_amount)}</p>
