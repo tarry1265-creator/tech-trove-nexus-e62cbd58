@@ -186,6 +186,12 @@ const PaymentSuccess = () => {
 
         console.log("[PaymentSuccess] Saving order with total:", totalAmount, "items:", cartItems.length);
 
+        const shippingName = localStorage.getItem("checkout_name") || "";
+        const shippingPhone = localStorage.getItem("checkout_phone") || "";
+        const shippingAddress = localStorage.getItem("checkout_address") || "";
+        const shippingCity = localStorage.getItem("checkout_city") || "";
+        const shippingState = localStorage.getItem("checkout_state") || "";
+
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert({
@@ -193,7 +199,12 @@ const PaymentSuccess = () => {
             total_amount: totalAmount,
             currency: "NGN",
             status: "completed",
-          })
+            shipping_name: shippingName,
+            shipping_phone: shippingPhone,
+            shipping_address: shippingAddress,
+            shipping_city: shippingCity,
+            shipping_state: shippingState,
+          } as any)
           .select()
           .single();
 
