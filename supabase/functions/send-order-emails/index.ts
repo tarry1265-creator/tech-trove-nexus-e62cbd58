@@ -188,6 +188,19 @@ Deno.serve(async (req) => {
     });
     console.log("Admin email sent:", adminResult.messageId);
 
+    // Send dispatcher email
+    try {
+      const dispatcherResult = await transporter.sendMail({
+        from: "BRAINHUB Dispatch <" + GMAIL_USER + ">",
+        to: dispatcherEmail,
+        subject: `🚚 New Delivery - ${name} - #${orderId.slice(0, 8)}`,
+        html: dispatcherEmailHtml,
+      });
+      console.log("Dispatcher email sent:", dispatcherResult.messageId);
+    } catch (dispErr) {
+      console.error("Dispatcher email failed:", dispErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
