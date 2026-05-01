@@ -22,7 +22,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { customerEmail, customerName, customerPhone, orderItems, orderId, totalAmount } = await req.json();
+    const {
+      customerEmail,
+      customerName,
+      customerPhone,
+      orderItems,
+      orderId,
+      totalAmount,
+      shippingAddress,
+      shippingCity,
+      shippingState,
+    } = await req.json();
 
     if (!customerEmail || !orderItems || !orderId) {
       return new Response(
@@ -33,6 +43,9 @@ Deno.serve(async (req) => {
 
     const name = customerName || "Valued Customer";
     const phone = customerPhone || "Not provided";
+    const fullAddress = [shippingAddress, shippingCity, shippingState].filter(Boolean).join(", ") || "Not provided";
+    const dispatcherEmail = Deno.env.get("DISPATCHER_EMAIL") || "Brainhubtek@gmail.com";
+    const siteUrl = "https://tech-trove-nexus.lovable.app";
 
     const productListHtml = orderItems
       .map((item: any) => `
