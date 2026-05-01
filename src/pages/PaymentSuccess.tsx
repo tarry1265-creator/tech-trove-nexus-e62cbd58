@@ -102,6 +102,9 @@ const PaymentSuccess = () => {
                 orderItems,
                 orderId: txRef || "unknown",
                 totalAmount,
+                shippingAddress: localStorage.getItem("checkout_address") || "",
+                shippingCity: localStorage.getItem("checkout_city") || "",
+                shippingState: localStorage.getItem("checkout_state") || "",
               },
             });
           } catch (emailErr) {
