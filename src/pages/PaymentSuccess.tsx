@@ -157,6 +157,9 @@ const PaymentSuccess = () => {
 
           localStorage.removeItem("checkout_phone");
           localStorage.removeItem("checkout_name");
+          localStorage.removeItem("checkout_address");
+          localStorage.removeItem("checkout_city");
+          localStorage.removeItem("checkout_state");
           clearCart();
           setVerified(true);
         } else {
