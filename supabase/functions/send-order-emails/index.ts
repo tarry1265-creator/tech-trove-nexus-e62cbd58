@@ -125,7 +125,47 @@ Deno.serve(async (req) => {
               </tr>
             </tfoot>
           </table>
+          <p style="color:#555;font-size:14px;"><strong>Delivery Address:</strong> ${fullAddress}</p>
           <p style="color:#555;font-size:14px;">Please process this order and arrange delivery.</p>
+        </div>
+      </div>
+    `;
+
+    // Dispatcher notification email - large, action-focused
+    const waText = encodeURIComponent(
+      `New BRAINHUB order #${orderId.slice(0,8)}\nCustomer: ${name}\nPhone: ${phone}\nAddress: ${fullAddress}\nTotal: ₦${Number(totalAmount).toLocaleString()}`
+    );
+    const dispatchPortalLink = `${siteUrl}/dispatch?order=${orderId}`;
+    const dispatcherEmailHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
+        <div style="background:#285A48;padding:30px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:26px;">🚚 NEW DELIVERY</h1>
+          <p style="color:#B0E4CC;margin:8px 0 0;font-size:14px;">Action required</p>
+        </div>
+        <div style="padding:30px;">
+          <div style="background:#f0faf5;border-left:4px solid #285A48;padding:18px;margin:0 0 20px;border-radius:4px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Deliver to</p>
+            <p style="margin:0 0 6px;font-size:20px;font-weight:bold;color:#091413;">${name}</p>
+            <p style="margin:0 0 12px;font-size:16px;color:#333;">📞 <a href="tel:${phone}" style="color:#285A48;text-decoration:none;font-weight:bold;">${phone}</a></p>
+            <p style="margin:0;font-size:15px;color:#333;line-height:1.5;">📍 ${fullAddress}</p>
+          </div>
+          <p style="color:#555;font-size:14px;margin:0 0 8px;"><strong>Order ID:</strong> #${orderId.slice(0, 8)}</p>
+          <table style="width:100%;border-collapse:collapse;margin:14px 0 20px;">
+            <thead>
+              <tr style="background:#f5f5f5;">
+                <th style="padding:10px;text-align:left;font-size:12px;color:#666;">Item</th>
+                <th style="padding:10px;text-align:center;font-size:12px;color:#666;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>${orderItems.map((it: any) => `<tr><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${it.product_name}</td><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;text-align:center;">${it.quantity}</td></tr>`).join("")}</tbody>
+          </table>
+          <p style="margin:0 0 20px;font-size:16px;color:#091413;"><strong>Total: ₦${Number(totalAmount).toLocaleString()}</strong></p>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${dispatchPortalLink}" style="display:inline-block;background:#285A48;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">Open in Dispatch Portal</a>
+          </div>
+          <div style="text-align:center;margin:12px 0;">
+            <a href="https://wa.me/?text=${waText}" style="display:inline-block;background:#25D366;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">📲 Forward via WhatsApp</a>
+          </div>
         </div>
       </div>
     `;
