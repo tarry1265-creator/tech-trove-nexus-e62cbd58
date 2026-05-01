@@ -63,27 +63,10 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      const metadataUsername = typeof currentUser?.user_metadata?.username === "string" ? currentUser.user_metadata.username : "";
-      const metadataPhone = typeof currentUser?.user_metadata?.phone_number === "string" ? currentUser.user_metadata.phone_number : "";
-
-      if (currentUser && (metadataUsername || metadataPhone)) {
-        await supabase
-          .from("profiles")
-          .update({
-            ...(metadataUsername ? { username: metadataUsername } : {}),
-            ...(metadataPhone ? { phone_number: metadataPhone } : {}),
-          })
-          .eq("user_id", currentUser.id)
-          .or("username.is.null,phone_number.is.null");
-      }
-
       const { data: profileData } = await supabase
         .from("profiles")
         .select("is_banned")
-        .eq("user_id", currentUser?.id || "")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
         .single();
 
       if (profileData && (profileData as any).is_banned) {
@@ -98,10 +81,7 @@ const Login = () => {
   const handleSignUp = async () => {
     if (!validateInputs()) return;
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, {
-      username: username.trim(),
-      phone_number: phone.trim(),
-    });
+    const { error } = await signUp(email, password);
     setIsSubmitting(false);
     if (error) {
       toast({
@@ -112,9 +92,22 @@ const Login = () => {
         variant: "destructive",
       });
     } else {
+      // Save username and phone to profile after signup
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          const updateData: any = {};
+          if (username.trim()) updateData.username = username.trim();
+          if (phone.trim()) updateData.phone_number = phone.trim();
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("user_id", newUser.id);
+          }
+        }
+      } catch (e) {
+        console.error("Error saving profile data:", e);
+      }
       toast({ title: "Check your email!", description: "We've sent you a verification link." });
       setIsSignUpMode(false);
-      setPassword("");
     }
   };
 

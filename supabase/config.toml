@@ -1,0 +1,28 @@
+project_id = "hxpcnkjgobczwmgswqon"
+
+[functions.scan-product]
+verify_jwt = false
+
+[functions.firecrawl-product-search]
+verify_jwt = false
+
+[functions.process-repair-request]
+verify_jwt = false
+
+[functions.create-paystack-checkout]
+verify_jwt = false
+
+[functions.verify-paystack-payment]
+verify_jwt = false
+
+[functions.create-flutterwave-checkout]
+verify_jwt = false
+
+[functions.verify-flutterwave-payment]
+verify_jwt = false
+
+[functions.send-order-notification]
+verify_jwt = false
+
+[functions.send-order-emails]
+verify_jwt = false
