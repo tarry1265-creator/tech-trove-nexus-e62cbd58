@@ -47,9 +47,12 @@ const Checkout = () => {
 
     setIsLoading(true);
     try {
-      // Save checkout phone to localStorage for admin email
+      // Save checkout details to localStorage so PaymentSuccess can persist them onto the order
       localStorage.setItem("checkout_phone", shippingInfo.phone);
       localStorage.setItem("checkout_name", `${shippingInfo.firstName} ${shippingInfo.lastName}`);
+      localStorage.setItem("checkout_address", shippingInfo.address);
+      localStorage.setItem("checkout_city", shippingInfo.city);
+      localStorage.setItem("checkout_state", shippingInfo.state);
       const callbackUrl = `${window.location.origin}/payment-success`;
 
       const { data, error } = await supabase.functions.invoke("create-flutterwave-checkout", {
