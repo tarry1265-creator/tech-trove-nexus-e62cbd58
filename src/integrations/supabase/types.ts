@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_events: {
+        Row: {
+          created_at: string
+          dispatcher_name: string | null
+          event_type: string
+          id: string
+          notes: string | null
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          dispatcher_name?: string | null
+          event_type: string
+          id?: string
+          notes?: string | null
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          dispatcher_name?: string | null
+          event_type?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+        }
+        Relationships: []
+      }
       loyalty_points: {
         Row: {
           created_at: string
@@ -147,7 +174,21 @@ export type Database = {
         Row: {
           created_at: string
           currency: string
+          delivered_at: string | null
+          delivered_by: string | null
+          delivery_notes: string | null
+          delivery_proof_url: string | null
+          dispatcher_assigned: string | null
+          failed_attempts: number
           id: string
+          out_for_delivery_at: string | null
+          picked_up_at: string | null
+          recipient_name: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_name: string | null
+          shipping_phone: string | null
+          shipping_state: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -156,7 +197,21 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivery_notes?: string | null
+          delivery_proof_url?: string | null
+          dispatcher_assigned?: string | null
+          failed_attempts?: number
           id?: string
+          out_for_delivery_at?: string | null
+          picked_up_at?: string | null
+          recipient_name?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_state?: string | null
           status?: string
           total_amount: number
           updated_at?: string
@@ -165,7 +220,21 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivery_notes?: string | null
+          delivery_proof_url?: string | null
+          dispatcher_assigned?: string | null
+          failed_attempts?: number
           id?: string
+          out_for_delivery_at?: string | null
+          picked_up_at?: string | null
+          recipient_name?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          shipping_state?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
