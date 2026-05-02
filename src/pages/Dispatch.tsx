@@ -40,6 +40,7 @@ const Dispatch = () => {
         .from("orders")
         .select("*")
         .in("status", ["completed", "out_for_delivery", "picked_up", "delivered", "failed"])
+        .neq("fulfillment_type", "pickup")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
