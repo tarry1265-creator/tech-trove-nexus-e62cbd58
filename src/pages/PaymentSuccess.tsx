@@ -105,6 +105,7 @@ const PaymentSuccess = () => {
                 shippingAddress: localStorage.getItem("checkout_address") || "",
                 shippingCity: localStorage.getItem("checkout_city") || "",
                 shippingState: localStorage.getItem("checkout_state") || "",
+                fulfillmentType: localStorage.getItem("checkout_fulfillment") || "delivery",
               },
             });
           } catch (emailErr) {
