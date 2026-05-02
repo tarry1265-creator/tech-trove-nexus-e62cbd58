@@ -114,9 +114,11 @@ Deno.serve(async (req) => {
           <p style="color:#B0E4CC;margin:8px 0 0;font-size:14px;">New Order Notification</p>
         </div>
         <div style="padding:30px;">
+          <div style="display:inline-block;background:${isPickup ? '#fff4e0' : '#e0f4ff'};color:${isPickup ? '#8a5a00' : '#0a4a78'};padding:6px 14px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:14px;letter-spacing:0.5px;">${fulfillmentBadge}</div>
           <h2 style="color:#333;margin:0 0 16px;">New Order Received! 🛒</h2>
           <p style="color:#555;font-size:14px;"><strong>Customer:</strong> ${name} (${customerEmail})</p>
           <p style="color:#555;font-size:14px;"><strong>Phone:</strong> ${phone}</p>
+          <p style="color:#555;font-size:14px;"><strong>Fulfillment:</strong> ${fulfillmentLabel}</p>
           <p style="color:#555;font-size:14px;"><strong>Order ID:</strong> #${orderId.slice(0, 8)}</p>
           <table style="width:100%;border-collapse:collapse;margin:20px 0;">
             <thead>
