@@ -199,6 +199,7 @@ const PaymentSuccess = () => {
         const shippingAddress = localStorage.getItem("checkout_address") || "";
         const shippingCity = localStorage.getItem("checkout_city") || "";
         const shippingState = localStorage.getItem("checkout_state") || "";
+        const fulfillmentType = localStorage.getItem("checkout_fulfillment") || "delivery";
 
         const { data: order, error: orderError } = await supabase
           .from("orders")
@@ -212,6 +213,7 @@ const PaymentSuccess = () => {
             shipping_address: shippingAddress,
             shipping_city: shippingCity,
             shipping_state: shippingState,
+            fulfillment_type: fulfillmentType,
           } as any)
           .select()
           .single();
