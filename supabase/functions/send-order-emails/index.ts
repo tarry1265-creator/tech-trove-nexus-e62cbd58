@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
       shippingAddress,
       shippingCity,
       shippingState,
+      fulfillmentType,
     } = await req.json();
 
     if (!customerEmail || !orderItems || !orderId) {
@@ -43,7 +44,13 @@ Deno.serve(async (req) => {
 
     const name = customerName || "Valued Customer";
     const phone = customerPhone || "Not provided";
-    const fullAddress = [shippingAddress, shippingCity, shippingState].filter(Boolean).join(", ") || "Not provided";
+    const isPickup = fulfillmentType === "pickup";
+    const PICKUP_LOCATION = "BRAINHUB TECH Store, Lagos, Nigeria";
+    const fullAddress = isPickup
+      ? PICKUP_LOCATION
+      : ([shippingAddress, shippingCity, shippingState].filter(Boolean).join(", ") || "Not provided");
+    const fulfillmentBadge = isPickup ? "🏬 PICKUP" : "🚚 DELIVERY";
+    const fulfillmentLabel = isPickup ? "In-store pickup" : "Home delivery";
     const dispatcherEmail = Deno.env.get("DISPATCHER_EMAIL") || "Brainhubtek@gmail.com";
     const siteUrl = "https://tech-trove-nexus.lovable.app";
 
