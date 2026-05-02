@@ -168,7 +168,12 @@ const AdminOrders = () => {
                     >
                       <td className="px-4 py-3">
                         <div>
-                          <span className="font-mono text-sm text-foreground">#{order.id.slice(0, 8)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-foreground">#{order.id.slice(0, 8)}</span>
+                            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full ${order.fulfillment_type === 'pickup' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                              {order.fulfillment_type === 'pickup' ? '🏬 Pickup' : '🚚 Delivery'}
+                            </span>
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
