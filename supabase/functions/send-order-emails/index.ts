@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
               </tr>
             </tfoot>
           </table>
-          <p style="color:#555;font-size:14px;"><strong>Delivery Address:</strong> ${fullAddress}</p>
-          <p style="color:#555;font-size:14px;">Please process this order and arrange delivery.</p>
+          <p style="color:#555;font-size:14px;"><strong>${isPickup ? 'Pickup location' : 'Delivery Address'}:</strong> ${fullAddress}</p>
+          <p style="color:#555;font-size:14px;">${isPickup ? 'Notify the customer when the order is ready for collection.' : 'Please process this order and arrange delivery.'}</p>
         </div>
       </div>
     `;
