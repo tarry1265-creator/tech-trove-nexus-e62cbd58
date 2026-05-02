@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
       const dispatcherResult = await transporter.sendMail({
         from: "BRAINHUB Dispatch <" + GMAIL_USER + ">",
         to: dispatcherEmail,
-        subject: `🚚 New Delivery - ${name} - #${orderId.slice(0, 8)}`,
+        subject: `${isPickup ? '🏬 New Pickup' : '🚚 New Delivery'} - ${name} - #${orderId.slice(0, 8)}`,
         html: dispatcherEmailHtml,
       });
       console.log("Dispatcher email sent:", dispatcherResult.messageId);
