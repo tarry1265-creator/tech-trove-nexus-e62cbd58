@@ -93,9 +93,13 @@ const Cart = () => {
                   <span>Total</span>
                   <span className="text-price">{formatPrice(subtotal)}</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  You'll choose Delivery or Pickup at checkout.
+                </p>
                 <button
                   onClick={() => navigate("/checkout")}
-                  className="w-full btn-primary py-3.5 mt-6"
+                  className="w-full btn-primary py-3.5 mt-4"
                 >
                   Proceed to Checkout
                 </button>
