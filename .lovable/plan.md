@@ -1,93 +1,127 @@
-# Improve Dispatch Tracking & Dispatcher Notifications
+## What we're building
 
-Right now the dispatch flow is very thin:
-- Dispatch portal only shows `completed` orders and lets the rider mark them `delivered` — no proof, no timestamps, no notes, no rider identity.
-- Admin Orders page only shows Order ID / Date / Status / Amount — admin can't see who delivered, when, or any proof.
-- Dispatchers find out about new orders only by manually opening the portal — no push/email/WhatsApp alert.
+Two related upgrades to the order flow:
 
-This plan fixes all three.
+1. **Pickup vs Delivery toggle** at checkout — propagated through the order record and into every notification email (customer, admin, dispatcher).
+2. **Saved Addresses** — users can save multiple addresses (with optional GPS capture) on the Addresses page and pick a saved address at checkout when "Delivery" is selected.
 
 ---
 
-## 1. Database changes (one migration)
+## 1. Pickup vs Delivery — where it appears
 
-Add delivery tracking fields to `orders`:
-- `delivered_at` (timestamptz, nullable)
-- `delivered_by` (text, nullable) — dispatcher name
-- `delivery_notes` (text, nullable)
-- `delivery_proof_url` (text, nullable) — photo of handover
-- `recipient_name` (text, nullable) — who actually received it
-- `dispatcher_assigned` (text, nullable)
-- `out_for_delivery_at` (timestamptz, nullable)
+The natural moment is **on the Checkout page**, as the very first decision *before* the shipping form. The choice changes what the user sees next:
 
-Add a new `dispatch_events` table for a full audit trail (one row per status change):
-- `id`, `order_id`, `event_type` ('assigned' | 'picked_up' | 'out_for_delivery' | 'delivered' | 'failed_attempt'), `notes`, `dispatcher_name`, `created_at`.
+```text
+┌─ Checkout ──────────────────────────────────┐
+│ How would you like to receive your order?   │
+│  ( ) Delivery — we bring it to you          │
+│  ( ) Pickup   — collect at our store        │
+└─────────────────────────────────────────────┘
+```
 
-Also persist shipping info on the order itself so dispatch can see address/phone (currently it only lives in Flutterwave meta):
-- `shipping_name`, `shipping_phone`, `shipping_address`, `shipping_city`, `shipping_state` on `orders`.
+- **Delivery selected** → show address picker (saved addresses dropdown + "use new address" form). All address fields required.
+- **Pickup selected** → hide address fields; show a small card with the BRAINHUB pickup location + a note ("We'll call you when your order is ready"). Only name + phone required.
 
-Storage: reuse the existing public `repair-images` bucket (or add a new `delivery-proofs` bucket) for handover photos.
+A second, lighter prompt is added on the **Cart page** above the "Checkout" button as an early hint ("Delivery or Pickup? You'll choose at checkout") — purely informational, no state.
 
-RLS: keep existing public-read pattern used elsewhere in the app for the dispatch portal to keep working without auth.
+---
 
-## 2. Dispatch portal (`/dispatch`) upgrades
+## 2. Data flow & schema
 
-Replace the single "Confirm Delivery" button with a proper workflow:
+Add one column to `orders`:
+- `fulfillment_type text` — `'delivery' | 'pickup'`, default `'delivery'`.
 
-1. **Dispatcher login** — instead of just a shared password, ask for the dispatcher's name once after the password (stored in localStorage). Every event they record is tagged with this name.
-2. **Order card** now shows:
-   - Customer name, phone (click-to-call), full delivery address (with "Open in Maps" link)
-   - Items + total
-   - Current delivery status badge
-3. **Status actions** (buttons that write to `dispatch_events` and update `orders`):
-   - "Mark Picked Up"
-   - "Out for Delivery"
-   - "Mark Delivered" → opens a modal asking for: recipient name, optional notes, optional photo upload (camera capture on mobile)
-   - "Failed Attempt" → asks for reason, keeps order active
-4. **Filter tabs**: Pending Pickup / Out for Delivery / Delivered Today / Failed.
-5. **History view**: show timeline of all `dispatch_events` for each order on expand.
+Create a new table `user_addresses`:
+- `id uuid pk`
+- `user_id uuid` (links to auth user, no FK to auth.users)
+- `label text` — e.g. "Home", "Office"
+- `recipient_name text`
+- `phone text`
+- `address text`, `city text`, `state text`
+- `latitude numeric`, `longitude numeric` (nullable — only set if user grants location)
+- `is_default boolean default false`
+- `created_at`, `updated_at`
 
-## 3. Admin visibility
+RLS: users can select/insert/update/delete only their own rows (`auth.uid() = user_id`).
 
-In `AdminOrders.tsx`:
-- Add columns: Customer, Phone, Delivery Status, Delivered By, Delivered At.
-- Click a row to open a detail drawer showing: shipping address, full dispatch event timeline, delivery proof photo, recipient name, notes.
-- Add filters for delivery status (All / Awaiting Dispatch / Out for Delivery / Delivered / Failed).
-- Add a small KPI card row: "Delivered today", "Out for delivery now", "Awaiting dispatch", "Failed attempts (7d)".
-- Add a "Reassign / Reopen" action (admin-only) that flips an order back to pending dispatch if something went wrong.
+---
 
-## 4. Dispatcher notification when an order is placed
+## 3. Addresses page rebuild (`src/pages/Addresses.tsx`)
 
-After payment success, in addition to the existing customer + admin emails, also notify the dispatcher through two channels:
+Replace the empty placeholder with a real manager:
 
-1. **Email** to a configurable dispatcher address (new secret `DISPATCHER_EMAIL`, defaulting to the admin email if not set). The email contains: customer name, phone (tap-to-call link), full address, items, total, and a deep link `https://<site>/dispatch?order=<id>` that opens the portal directly to that order.
-2. **WhatsApp deep link** option: generate a `wa.me` link pre-filled with the order summary so the system can also send it through the existing `+2347068450457` channel manually if desired. (True automated WhatsApp sending requires WhatsApp Business API — out of scope; we'll surface the prefilled link in the admin email so it's one tap to forward.)
+- **Saved addresses list** — cards showing label, recipient, full address, phone, "Default" badge, and edit/delete buttons.
+- **"Add new address" button** opens a dialog with:
+  - Label, recipient name, phone, address, city, state
+  - **"Use my current location" button** → calls `navigator.geolocation.getCurrentPosition`, stores lat/lng, and reverse-geocodes via a free service (OpenStreetMap Nominatim — no key needed) to prefill address/city/state. User can edit before saving.
+  - "Set as default" checkbox.
+- Permission handling: if the user denies location, the form still works manually.
 
-Implementation: extend `send-order-emails` to send a third email to the dispatcher with a dispatch-focused template (big address, big phone number, items list, "Open in Dispatch Portal" CTA).
+Auth required (already enforced).
 
-## 5. Checkout → orders persistence
+---
 
-Update `create-flutterwave-checkout` (and the success/verify flow) to persist `shipping_*` fields onto the `orders` row when it's created, so the dispatch portal and admin emails always have the address even if Flutterwave meta is lost.
+## 4. Checkout page changes (`src/pages/Checkout.tsx`)
+
+- Add a `fulfillmentType` state at the top, with a clean radio segmented control.
+- When `delivery`:
+  - Fetch `user_addresses` for the logged-in user.
+  - Show a "Deliver to" selector (dropdown of saved addresses + "Enter a new address" option).
+  - If a saved address is picked, prefill the existing shipping form fields (read-only by default, "Edit" toggles them).
+  - "Save this address for next time" checkbox when entering a new one.
+- When `pickup`:
+  - Hide address/city/state fields; only require name + phone + email.
+  - Show pickup location card.
+- Pass `fulfillmentType` to `localStorage` (`checkout_fulfillment`) and forward to `PaymentSuccess`.
+
+---
+
+## 5. PaymentSuccess (`src/pages/PaymentSuccess.tsx`)
+
+- Read `checkout_fulfillment` from localStorage; insert into `orders.fulfillment_type`.
+- For pickup orders, set `shipping_address` to a clear marker like `"PICKUP - In-store collection"` so the dispatch portal can filter them out.
+- Pass `fulfillmentType` to the `send-order-emails` invocation.
+
+---
+
+## 6. Email function (`supabase/functions/send-order-emails/index.ts`)
+
+Accept new `fulfillmentType` field. In all three email bodies (customer, admin, dispatcher):
+
+- **Customer email**: replace the "Delivery Info" box with either:
+  - Delivery: existing "you'll be contacted shortly" message + the delivery address.
+  - Pickup: "Collect at our store" + pickup location + "we'll notify you when ready".
+- **Admin email**: add a prominent badge — `🚚 DELIVERY` or `🏬 PICKUP` — at the top.
+- **Dispatcher email**:
+  - Delivery: send as today.
+  - Pickup: still send (so dispatch is aware), but replace the action panel with "PICKUP ORDER — no delivery required" and skip the "Open in Dispatch Portal" CTA.
+
+---
+
+## 7. Dispatch portal (small touch)
+
+`AdminOrders.tsx` and `Dispatch.tsx`:
+- Show a small `Pickup`/`Delivery` chip on each order row.
+- In `Dispatch.tsx`, hide pickup orders from the active delivery queue (they don't need a rider). Admin can still see them on `AdminOrders`.
 
 ---
 
 ## Technical details
 
-- Files to edit:
-  - `src/pages/Dispatch.tsx` — full rebuild of the order card + add status workflow + photo upload + dispatcher name capture.
-  - `src/pages/AdminOrders.tsx` — add columns, filters, KPI cards, detail drawer.
-  - `supabase/functions/send-order-emails/index.ts` — add dispatcher email + wa.me link.
-  - `supabase/functions/create-flutterwave-checkout/index.ts` and `verify-flutterwave-payment/index.ts` — persist shipping fields on the order row.
-  - New migration for `orders` columns + `dispatch_events` table + (optional) `delivery-proofs` storage bucket.
-- New hook `useDispatchEvents(orderId)` for the timeline.
-- Reuse existing toast + tailwind patterns; no new dependencies needed (camera capture uses `<input type="file" accept="image/*" capture="environment">`).
+- **Reverse geocoding**: `https://nominatim.openstreetmap.org/reverse?lat=..&lon=..&format=json` — no key required, free for low volume, with a `User-Agent` header. Pure client call from the address dialog.
+- **Geolocation**: HTML5 `navigator.geolocation` only triggered when the user clicks the "Use my current location" button (no auto-prompt).
+- **Migration**: one migration adds `orders.fulfillment_type` and creates `user_addresses` with RLS.
+- **No breaking changes**: existing orders without `fulfillment_type` default to `'delivery'`.
+- **Memory update**: revise `mem://constraints/address-logic-preservation` to reflect that the addresses page now supports saved-address management.
 
 ---
 
-## Out of scope (can do later)
+## Files touched
 
-- True automated WhatsApp messaging (needs WhatsApp Business API + approval).
-- SMS notifications (would need Twilio/Termii secret).
-- Customer-facing live tracking page (could be a small follow-up using the same `dispatch_events` data).
+- New: `supabase/migrations/<timestamp>_pickup_delivery_addresses.sql`
+- Edit: `src/pages/Checkout.tsx`, `src/pages/Addresses.tsx`, `src/pages/PaymentSuccess.tsx`, `src/pages/Cart.tsx` (small hint), `src/pages/AdminOrders.tsx`, `src/pages/Dispatch.tsx`
+- Edit: `supabase/functions/send-order-emails/index.ts`
+- Edit: `src/components/checkout/CheckoutShippingForm.tsx` (accept fulfillmentType, hide fields for pickup, accept saved-address selector)
+- Memory: update address constraint memory.
 
-Approve this and I'll implement it end-to-end.
+Approve and I'll implement.

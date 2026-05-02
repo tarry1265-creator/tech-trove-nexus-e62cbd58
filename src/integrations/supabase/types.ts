@@ -180,6 +180,7 @@ export type Database = {
           delivery_proof_url: string | null
           dispatcher_assigned: string | null
           failed_attempts: number
+          fulfillment_type: string
           id: string
           out_for_delivery_at: string | null
           picked_up_at: string | null
@@ -203,6 +204,7 @@ export type Database = {
           delivery_proof_url?: string | null
           dispatcher_assigned?: string | null
           failed_attempts?: number
+          fulfillment_type?: string
           id?: string
           out_for_delivery_at?: string | null
           picked_up_at?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           delivery_proof_url?: string | null
           dispatcher_assigned?: string | null
           failed_attempts?: number
+          fulfillment_type?: string
           id?: string
           out_for_delivery_at?: string | null
           picked_up_at?: string | null
@@ -337,6 +340,54 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      user_addresses: {
+        Row: {
+          address: string
+          city: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string | null
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
+          recipient_name: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          recipient_name?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          recipient_name?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
