@@ -147,7 +147,34 @@ Deno.serve(async (req) => {
       `New BRAINHUB order #${orderId.slice(0,8)}\nCustomer: ${name}\nPhone: ${phone}\nAddress: ${fullAddress}\nTotal: ₦${Number(totalAmount).toLocaleString()}`
     );
     const dispatchPortalLink = `${siteUrl}/dispatch?order=${orderId}`;
-    const dispatcherEmailHtml = `
+    const dispatcherEmailHtml = isPickup ? `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
+        <div style="background:#8a5a00;padding:30px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:26px;">🏬 PICKUP ORDER</h1>
+          <p style="color:#ffe9c2;margin:8px 0 0;font-size:14px;">No delivery required</p>
+        </div>
+        <div style="padding:30px;">
+          <div style="background:#fff8ee;border-left:4px solid #8a5a00;padding:18px;margin:0 0 20px;border-radius:4px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Customer collecting</p>
+            <p style="margin:0 0 6px;font-size:20px;font-weight:bold;color:#091413;">${name}</p>
+            <p style="margin:0 0 12px;font-size:16px;color:#333;">📞 <a href="tel:${phone}" style="color:#8a5a00;text-decoration:none;font-weight:bold;">${phone}</a></p>
+            <p style="margin:0;font-size:14px;color:#555;">📍 Pickup at: ${PICKUP_LOCATION}</p>
+          </div>
+          <p style="color:#555;font-size:14px;margin:0 0 8px;"><strong>Order ID:</strong> #${orderId.slice(0, 8)}</p>
+          <table style="width:100%;border-collapse:collapse;margin:14px 0 20px;">
+            <thead>
+              <tr style="background:#f5f5f5;">
+                <th style="padding:10px;text-align:left;font-size:12px;color:#666;">Item</th>
+                <th style="padding:10px;text-align:center;font-size:12px;color:#666;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>${orderItems.map((it: any) => `<tr><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${it.product_name}</td><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;text-align:center;">${it.quantity}</td></tr>`).join("")}</tbody>
+          </table>
+          <p style="margin:0 0 20px;font-size:16px;color:#091413;"><strong>Total: ₦${Number(totalAmount).toLocaleString()}</strong></p>
+          <p style="color:#555;font-size:13px;line-height:1.6;">Please prepare this order and call the customer when it's ready for in-store collection. No rider dispatch is needed.</p>
+        </div>
+      </div>
+    ` : `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
         <div style="background:#285A48;padding:30px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:26px;">🚚 NEW DELIVERY</h1>
