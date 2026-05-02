@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
       shippingAddress,
       shippingCity,
       shippingState,
+      fulfillmentType,
     } = await req.json();
 
     if (!customerEmail || !orderItems || !orderId) {
@@ -43,7 +44,13 @@ Deno.serve(async (req) => {
 
     const name = customerName || "Valued Customer";
     const phone = customerPhone || "Not provided";
-    const fullAddress = [shippingAddress, shippingCity, shippingState].filter(Boolean).join(", ") || "Not provided";
+    const isPickup = fulfillmentType === "pickup";
+    const PICKUP_LOCATION = "BRAINHUB TECH Store, Lagos, Nigeria";
+    const fullAddress = isPickup
+      ? PICKUP_LOCATION
+      : ([shippingAddress, shippingCity, shippingState].filter(Boolean).join(", ") || "Not provided");
+    const fulfillmentBadge = isPickup ? "🏬 PICKUP" : "🚚 DELIVERY";
+    const fulfillmentLabel = isPickup ? "In-store pickup" : "Home delivery";
     const dispatcherEmail = Deno.env.get("DISPATCHER_EMAIL") || "Brainhubtek@gmail.com";
     const siteUrl = "https://tech-trove-nexus.lovable.app";
 
@@ -86,8 +93,10 @@ Deno.serve(async (req) => {
             </tfoot>
           </table>
           <div style="background:#f0faf5;border-left:4px solid #285A48;padding:16px;margin:20px 0;border-radius:4px;">
-            <p style="color:#333;font-size:14px;margin:0;line-height:1.6;">
-              📦 <strong>Delivery Info:</strong> You will be contacted shortly regarding when you'll receive your product(s). Stay tuned!
+            <p style="color:#333;font-size:14px;margin:0 0 6px;line-height:1.6;">
+              ${isPickup
+                ? `🏬 <strong>Pickup:</strong> Please collect your order at <strong>${PICKUP_LOCATION}</strong>. We'll call you on ${phone} as soon as it's ready.`
+                : `📦 <strong>Delivery:</strong> Your order will be delivered to <strong>${fullAddress}</strong>. You'll be contacted shortly to confirm timing.`}
             </p>
           </div>
           <p style="color:#999;font-size:12px;margin-top:30px;">
@@ -105,9 +114,11 @@ Deno.serve(async (req) => {
           <p style="color:#B0E4CC;margin:8px 0 0;font-size:14px;">New Order Notification</p>
         </div>
         <div style="padding:30px;">
+          <div style="display:inline-block;background:${isPickup ? '#fff4e0' : '#e0f4ff'};color:${isPickup ? '#8a5a00' : '#0a4a78'};padding:6px 14px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:14px;letter-spacing:0.5px;">${fulfillmentBadge}</div>
           <h2 style="color:#333;margin:0 0 16px;">New Order Received! 🛒</h2>
           <p style="color:#555;font-size:14px;"><strong>Customer:</strong> ${name} (${customerEmail})</p>
           <p style="color:#555;font-size:14px;"><strong>Phone:</strong> ${phone}</p>
+          <p style="color:#555;font-size:14px;"><strong>Fulfillment:</strong> ${fulfillmentLabel}</p>
           <p style="color:#555;font-size:14px;"><strong>Order ID:</strong> #${orderId.slice(0, 8)}</p>
           <table style="width:100%;border-collapse:collapse;margin:20px 0;">
             <thead>
@@ -125,8 +136,8 @@ Deno.serve(async (req) => {
               </tr>
             </tfoot>
           </table>
-          <p style="color:#555;font-size:14px;"><strong>Delivery Address:</strong> ${fullAddress}</p>
-          <p style="color:#555;font-size:14px;">Please process this order and arrange delivery.</p>
+          <p style="color:#555;font-size:14px;"><strong>${isPickup ? 'Pickup location' : 'Delivery Address'}:</strong> ${fullAddress}</p>
+          <p style="color:#555;font-size:14px;">${isPickup ? 'Notify the customer when the order is ready for collection.' : 'Please process this order and arrange delivery.'}</p>
         </div>
       </div>
     `;
@@ -136,7 +147,34 @@ Deno.serve(async (req) => {
       `New BRAINHUB order #${orderId.slice(0,8)}\nCustomer: ${name}\nPhone: ${phone}\nAddress: ${fullAddress}\nTotal: ₦${Number(totalAmount).toLocaleString()}`
     );
     const dispatchPortalLink = `${siteUrl}/dispatch?order=${orderId}`;
-    const dispatcherEmailHtml = `
+    const dispatcherEmailHtml = isPickup ? `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
+        <div style="background:#8a5a00;padding:30px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:26px;">🏬 PICKUP ORDER</h1>
+          <p style="color:#ffe9c2;margin:8px 0 0;font-size:14px;">No delivery required</p>
+        </div>
+        <div style="padding:30px;">
+          <div style="background:#fff8ee;border-left:4px solid #8a5a00;padding:18px;margin:0 0 20px;border-radius:4px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Customer collecting</p>
+            <p style="margin:0 0 6px;font-size:20px;font-weight:bold;color:#091413;">${name}</p>
+            <p style="margin:0 0 12px;font-size:16px;color:#333;">📞 <a href="tel:${phone}" style="color:#8a5a00;text-decoration:none;font-weight:bold;">${phone}</a></p>
+            <p style="margin:0;font-size:14px;color:#555;">📍 Pickup at: ${PICKUP_LOCATION}</p>
+          </div>
+          <p style="color:#555;font-size:14px;margin:0 0 8px;"><strong>Order ID:</strong> #${orderId.slice(0, 8)}</p>
+          <table style="width:100%;border-collapse:collapse;margin:14px 0 20px;">
+            <thead>
+              <tr style="background:#f5f5f5;">
+                <th style="padding:10px;text-align:left;font-size:12px;color:#666;">Item</th>
+                <th style="padding:10px;text-align:center;font-size:12px;color:#666;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>${orderItems.map((it: any) => `<tr><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${it.product_name}</td><td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;text-align:center;">${it.quantity}</td></tr>`).join("")}</tbody>
+          </table>
+          <p style="margin:0 0 20px;font-size:16px;color:#091413;"><strong>Total: ₦${Number(totalAmount).toLocaleString()}</strong></p>
+          <p style="color:#555;font-size:13px;line-height:1.6;">Please prepare this order and call the customer when it's ready for in-store collection. No rider dispatch is needed.</p>
+        </div>
+      </div>
+    ` : `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
         <div style="background:#285A48;padding:30px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:26px;">🚚 NEW DELIVERY</h1>
@@ -193,7 +231,7 @@ Deno.serve(async (req) => {
       const dispatcherResult = await transporter.sendMail({
         from: "BRAINHUB Dispatch <" + GMAIL_USER + ">",
         to: dispatcherEmail,
-        subject: `🚚 New Delivery - ${name} - #${orderId.slice(0, 8)}`,
+        subject: `${isPickup ? '🏬 New Pickup' : '🚚 New Delivery'} - ${name} - #${orderId.slice(0, 8)}`,
         html: dispatcherEmailHtml,
       });
       console.log("Dispatcher email sent:", dispatcherResult.messageId);
