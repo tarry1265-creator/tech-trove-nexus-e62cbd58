@@ -93,8 +93,10 @@ Deno.serve(async (req) => {
             </tfoot>
           </table>
           <div style="background:#f0faf5;border-left:4px solid #285A48;padding:16px;margin:20px 0;border-radius:4px;">
-            <p style="color:#333;font-size:14px;margin:0;line-height:1.6;">
-              📦 <strong>Delivery Info:</strong> You will be contacted shortly regarding when you'll receive your product(s). Stay tuned!
+            <p style="color:#333;font-size:14px;margin:0 0 6px;line-height:1.6;">
+              ${isPickup
+                ? `🏬 <strong>Pickup:</strong> Please collect your order at <strong>${PICKUP_LOCATION}</strong>. We'll call you on ${phone} as soon as it's ready.`
+                : `📦 <strong>Delivery:</strong> Your order will be delivered to <strong>${fullAddress}</strong>. You'll be contacted shortly to confirm timing.`}
             </p>
           </div>
           <p style="color:#999;font-size:12px;margin-top:30px;">
